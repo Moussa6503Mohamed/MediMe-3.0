@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
 import { useToast } from "@/hooks/use-toast";
+import { Info } from "lucide-react";
 
 export default function LoginView() {
   const { navigate } = useAppStore();
@@ -76,6 +77,19 @@ export default function LoginView() {
                 required
                 disabled={isLoading}
               />
+            </div>
+
+            <div className="bg-blue-50 border-l-4 border-blue-600 p-4 rounded-r-lg mb-6">
+              <div className="flex">
+                <div className="flex-shrink-0">
+                  <Info className="h-5 w-5 text-blue-700" />
+                </div>
+                <div className="ml-3">
+                  <p className="text-sm font-semibold text-blue-900 mb-1">Demo Credentials:</p>
+                  <p className="text-xs text-blue-800"><b>Email:</b> demo@medime.com</p>
+                  <p className="text-xs text-blue-800"><b>Password:</b> demo123</p>
+                </div>
+              </div>
             </div>
 
             <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
