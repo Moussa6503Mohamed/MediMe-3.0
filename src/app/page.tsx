@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAuth } from "@/hooks/use-auth";
@@ -32,17 +33,19 @@ import { useEffect } from "react";
 import ProfileView from "@/components/views/profile-view";
 import { useI18n } from "@/hooks/use-i18n";
 import { initVoiceAssistant } from "@/lib/voice";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const { isLoggedIn, currentUser } = useAuth();
   const { currentPage, language } = useAppStore();
   const { t, setLanguage } = useI18n();
+  const { toast } = useToast();
 
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
-    initVoiceAssistant(language, t);
-  }, [language, setLanguage, t]);
+    initVoiceAssistant(language, t, toast);
+  }, [language, setLanguage, t, toast]);
 
   const renderContent = () => {
     if (!isLoggedIn) {

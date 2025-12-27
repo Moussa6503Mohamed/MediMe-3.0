@@ -1,15 +1,18 @@
+
 "use client";
 
-import { useToast } from "@/hooks/use-toast";
+import type { Toast } from "@/hooks/use-toast";
 import { AppStore } from "@/store/app-store";
 
 let voiceRecognition: SpeechRecognition | null = null;
-const { toast } = useToast();
+let toast: ({ ...props }: Toast) => any;
 
 export const initVoiceAssistant = (
   language: "en" | "ar",
-  t: (key: string) => string
+  t: (key: string) => string,
+  toastFn: typeof toast
 ) => {
+  toast = toastFn;
   if (typeof window !== "undefined") {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
