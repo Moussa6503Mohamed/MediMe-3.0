@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -122,7 +123,7 @@ export const createAppStore = (
     isVoiceAssistantActive: false,
     activeMemberId: "aa-001",
     viewingMemberId: "aa-001",
-    activeDoctorId: doctors[0].id,
+    activeDoctorId: null,
     activeScheduleItemId: null,
     activeReportId: null,
     selectedDay: new Date().getDate(),
