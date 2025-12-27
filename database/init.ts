@@ -1,14 +1,23 @@
 /**
  * Database Initialization Script for MediMe-3.0
  * 
+ * ⚠️ OPTIONAL: This script is only needed if you want to populate sample data.
+ * The database works without running this script.
+ * 
  * This script initializes the Firestore database with:
  * - System settings
  * - Sample data for development
  * - Admin user setup instructions
  * 
+ * Prerequisites:
+ * 1. Install firebase-admin: npm install firebase-admin
+ * 2. Set up Firebase credentials (see database/README.md)
+ * 
  * Usage:
- * 1. Ensure Firebase is configured
- * 2. Run: npx tsx database/init.ts
+ * npm run db:init
+ * 
+ * Note: TypeScript errors are expected if firebase-admin is not installed.
+ * This is intentional - the script is optional for development.
  */
 
 import { initializeApp, cert, App } from 'firebase-admin/app';
