@@ -1,13 +1,24 @@
-{
-  "type": "service_account",
-  "project_id": "studio-7006252920-e1e93",
-  "private_key_id": "7562708f4f2290ed8fd800a42935a17e2dbef0e7",
-  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQCHHdj59vMWoAD8\nJ5UGVVAFgPFX2tF7mGs8gnCBScXm8Y7iNtr5p6jxawVUv5INkiKJ8qiIvj2KPjeh\nhR3+3JWZLX2WfGU2ELrV33IEkiLOBHnI76Em/GHwtT7vl/EOUv4BInuo4pnBZKil\n8wUcIf9odUIAuLwPnXt1qULGX6C1X0S7uD7TZBZyz6iTVteNuqs3UqeU3YGHcvjm\nY7hvMw7pWd6z6UPyRZBQbUtFey/al2YF/EZUN9JFr02T4hKCf81snnaOC/kyLssB\n8cPiy08NKndF1aqdjogWBNjr5ef0X1kkiflTbT/QzN6d5EmWfX9YSY/mDyAj74t4\nWsS2x1K/AgMBAAECggEAB22hpyRnet/zDenTLJT2IEdVfWH/UE8x3hLBwqneonK3\nS0J+yWjpRdR/Z4hcrDhTg8f+cf4bfgUro8qguolABDrXA7X1DoLe8rElIJE0LqVa\nWKyr7GvFqqkcO6nby9DOPBu8Nq22jEZPa0gwCLrpwsFnjoiZdjZPOknC7QsG19G/\njfjKzclcTkD09gBGPpYDGmphXezurZZfyequGIaFwXVVweBUhrHC4J7iop5lJeTY\nq47hp9K5taeoX/kRjqF5PW44GIV9qFdFSVOPCSnxKGogcX/qS4pPhv5NNpHX4e7k\nLQGX2xaZNyDiSNJ/ukAJJQ0y3EoFUxwE84FLuC0wEQKBgQC+foa/NsLeGtBGKvQq\nO9JcMbwRJRiuNLnlN+D/Ao5oV03khnvoJi7RLiOKJj/mAdTIWgSlKjvXW5P9aXw3\naFj+gHk1p5e9w5hQ5lLZgObjKKPV/6b43L445iNRp2xr8uU0flQCHLuVJb5zm+as\n9zt2nTKZv16asNOjTLy5csINxwKBgQC1lFlyEiNPP/ahOHrRNglw4hlWrmpVYdpx\nzgY9kPpRvGMkgmYnW/LTJLiBkNdn88Klmc9T85o+9IZ1EVspEUSWlcjrcXX+6GA4\nRXs4xbjF0a1K1J2xJwOsz9S5cHOgQhRRa1M/tY94GUAyL+fUsytXKnmESpRFI291\nqyNSSLdzSQKBgQClQXJ383O95pkEJkNHWDo3zNWQMhRlHEygc4d28qrEDej+9UQM\nswMuaM5gDKqmSLRlUuJwvmDHhSSvVJF0J8v8jUuZplhXQZWjqQv6sH6cVic7gNtD\nTYygI9ZEAfBm/YKltWn/oxmAXAwKkxbcumYVkm3RP1k87WXMZsfaQZnjBQKBgF9R\nf97MvLJmbm5VesuGZVBXsFt7daBanNRvBYGeMHllvlm1BjEVKJRES4LgaONN59kM\ns/RrBYaU0Fx1/vfA89Nkz7MgvYNRsuj3OGcmDAf0ONb2Y81SILC/7Phnmpr+9TGE\neJASHD08bCGsWjOi1laMmnuittDQeDs52nHgcETZAoGBAJ+W4JdsQycFy50ublHK\nDVrR6IQj9wa0W1R0IjTW8NhW2WLf96nV/Y94GmFv5+r1WsWvSuYBawbuv5C6OkeS\nHgzmOs1ytLuQytCt7WbOv5sgbMCl3uqP4n1tT2OYlHZhL8iWU6UO6F/BSy4XjICe\nXTMK+QQMW3yHataKeDO/hPp3\n-----END PRIVATE KEY-----\n",
-  "client_email": "github-action-1123904185@studio-7006252920-e1e93.iam.gserviceaccount.com",
-  "client_id": "108712232467781049045",
-  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-  "token_uri": "https://oauth2.googleapis.com/token",
-  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/github-action-1123904185%40studio-7006252920-e1e93.iam.gserviceaccount.com",
-  "universe_domain": "googleapis.com"
-}
+name: Deploy to Firebase Hosting on merge
+on:
+  push:
+    branches:
+      - main
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Dependencies and Build
+        # If you are NOT using a framework like React/Vite, 
+        # you can put a '#' in front of the next line to skip it.
+        run: npm ci && npm run build
+
+      - name: Deploy to Firebase
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_STUDIO_7006252920_E1E93 }}'
+          channelId: live
+          projectId: studio-7006252920-e1e93
