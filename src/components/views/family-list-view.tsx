@@ -3,7 +3,7 @@
 import { useAppStore } from "@/store/app-store";
 import { familyMembers } from "@/lib/data";
 import { useI18n } from "@/hooks/use-i18n";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Plus, Users } from "lucide-react";
 import { Header } from "./header";
@@ -25,7 +25,6 @@ export default function FamilyListView() {
           >
             <div className="flex items-center space-x-4">
               <Avatar className="w-12 h-12">
-                <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint="person portrait" />
                 <AvatarFallback>
                   {member.name
                     .split(" ")

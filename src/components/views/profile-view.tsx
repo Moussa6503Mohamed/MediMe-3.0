@@ -1,9 +1,9 @@
 "use client";
 
 import { useAppStore } from "@/store/app-store";
-import { userProfile, savedInsurance } from "@/lib/data";
+import { savedInsurance } from "@/lib/data";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   User,
   Shield,
@@ -17,15 +17,21 @@ import {
 } from "lucide-react";
 import { Header } from "./header";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { getAuth, signOut } from "firebase/auth";
 
 export default function ProfileView() {
-  const { navigate, logout } = useAppStore();
+  const { navigate } = useAppStore();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
 
   const handleLogout = () => {
-    logout();
-    navigate("home");
+    const auth = getAuth();
+    signOut(auth);
+    navigate("login-view");
   };
+  
+  const userInitials = currentUser?.displayName?.split(' ').map((n: string) => n[0]).join('') || 'U';
 
   return (
     <div className="pb-safe-footer">
@@ -33,17 +39,13 @@ export default function ProfileView() {
 
       <div className="bg-gradient-to-br from-cyan-50 to-blue-50 p-6 rounded-xl mb-6 text-center">
         <Avatar className="w-20 h-20 rounded-full border-4 border-primary shadow-lg mx-auto mb-4">
-          <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} data-ai-hint="person portrait" />
           <AvatarFallback>
-            {userProfile.name
-              .split(" ")
-              .map((n) => n[0])
-              .join("")}
+            {userInitials}
           </AvatarFallback>
         </Avatar>
-        <h2 className="text-2xl font-bold text-gray-800">{userProfile.name}</h2>
-        <p className="text-gray-600 mt-1">{userProfile.email}</p>
-        <p className="text-sm text-gray-500 mt-2">Member ID: aa-001</p>
+        <h2 className="text-2xl font-bold text-gray-800">{currentUser?.displayName}</h2>
+        <p className="text-gray-600 mt-1">{currentUser?.email}</p>
+        <p className="text-sm text-gray-500 mt-2">Member ID: {currentUser?.uid.slice(0, 8)}</p>
       </div>
 
       <div className="mb-6">
@@ -97,7 +99,7 @@ export default function ProfileView() {
             <div className="flex justify-between items-end">
               <div>
                 <p className="text-xs opacity-80">Card Holder</p>
-                <p className="font-semibold">{userProfile.name}</p>
+                <p className="font-semibold">{currentUser?.displayName}</p>
               </div>
               <div>
                 <p className="text-xs opacity-80">Expires</p>

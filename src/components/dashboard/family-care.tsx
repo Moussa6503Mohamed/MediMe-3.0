@@ -5,7 +5,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { familyMembers } from "@/lib/data";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { Button } from "../ui/button";
 import { Users } from "lucide-react";
@@ -37,7 +37,6 @@ export default function FamilyCare() {
               )}
             >
               <Avatar className="h-10 w-10">
-                <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint="person portrait" />
                 <AvatarFallback>
                   {member.name
                     .split(" ")

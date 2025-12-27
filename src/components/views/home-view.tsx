@@ -1,7 +1,6 @@
 "use client";
 
 import { useAppStore } from "@/store/app-store";
-import { userProfile } from "@/lib/data";
 import { useI18n } from "@/hooks/use-i18n";
 import {
   AlertTriangle,
@@ -17,11 +16,13 @@ import {
   Briefcase,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function HomeView() {
   const { navigate } = useAppStore();
   const { t, language, setLanguage } = useI18n();
+  const { currentUser } = useAuth();
 
   const toggleLanguage = () => {
     setLanguage(language === "en" ? "ar" : "en");
@@ -45,19 +46,18 @@ export default function HomeView() {
           onClick={() => navigate("profile-view")}
         >
           <Avatar className="w-12 h-12 border-2 border-primary">
-            <AvatarImage src={userProfile.avatarUrl} data-ai-hint="person portrait"/>
             <AvatarFallback>
-              {userProfile.name
-                .split(" ")
+              {currentUser?.displayName
+                ?.split(" ")
                 .map((n) => n[0])
-                .join("")}
+                .join("") || 'U'}
             </AvatarFallback>
           </Avatar>
 
           <div className="ml-3">
             <p className="text-sm font-medium text-gray-500">{t("welcomeBack")}</p>
             <h1 className="text-xl font-bold text-gray-800">
-              {userProfile.name}
+              {currentUser?.displayName || 'User'}
             </h1>
           </div>
         </div>

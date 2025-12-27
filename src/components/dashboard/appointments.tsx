@@ -6,7 +6,7 @@ import {
   CardFooter,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { upcomingAppointments } from "@/lib/data";
 import { ArrowRight, Calendar, Clock } from "lucide-react";
 import { format } from "date-fns";
@@ -22,7 +22,6 @@ export default function Appointments() {
           {upcomingAppointments.map((appt) => (
             <div key={appt.id} className="flex items-start gap-4">
               <Avatar className="h-10 w-10 border">
-                <AvatarImage src={appt.avatarUrl} alt={appt.doctor} data-ai-hint="person doctor" />
                 <AvatarFallback>
                   {appt.doctor
                     .split(" ")

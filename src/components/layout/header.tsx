@@ -16,12 +16,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { SidebarTrigger } from "../ui/sidebar";
-import { userProfile } from "@/lib/data";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function Header() {
-  const userInitials = userProfile.name.split(' ').map(n => n[0]).join('');
+  const { currentUser } = useAuth();
+  const userInitials = currentUser?.displayName?.split(' ').map(n => n[0]).join('') || 'U';
 
   return (
     <header className="flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6 sticky top-0 z-30">
@@ -55,7 +56,6 @@ export default function Header() {
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="relative h-10 w-10 rounded-full">
               <Avatar className="h-9 w-9">
-                <AvatarImage src={userProfile.avatarUrl} alt={userProfile.name} data-ai-hint="person portrait" />
                 <AvatarFallback>{userInitials}</AvatarFallback>
               </Avatar>
             </Button>
@@ -63,9 +63,9 @@ export default function Header() {
           <DropdownMenuContent align="end">
             <DropdownMenuLabel>
               <div className="flex flex-col">
-                <span>{userProfile.name}</span>
+                <span>{currentUser?.displayName}</span>
                 <span className="text-xs font-normal text-muted-foreground">
-                  {userProfile.email}
+                  {currentUser?.email}
                 </span>
               </div>
             </DropdownMenuLabel>

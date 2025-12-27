@@ -3,7 +3,7 @@
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   UserPlus,
   Check,
@@ -58,7 +58,6 @@ export default function InvitationDetailView() {
       <div className="p-6 mb-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-2xl shadow-lg">
         <div className="flex flex-col items-center text-center mb-4">
           <Avatar className="w-24 h-24 border-4 border-white shadow-lg mb-3">
-            <AvatarImage src={invitation.inviterAvatar} data-ai-hint="male portrait" />
             <AvatarFallback>{invitation.inviterName.slice(0, 2)}</AvatarFallback>
           </Avatar>
           <h2 className="text-2xl font-bold text-gray-800">

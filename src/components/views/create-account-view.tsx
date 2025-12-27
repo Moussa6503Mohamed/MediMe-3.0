@@ -24,38 +24,84 @@ import {
   CheckCircle,
   ChevronRight,
   ChevronLeft,
+  Key,
 } from "lucide-react";
 import { useI18n } from "@/hooks/use-i18n";
+import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
+import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { useFirestore } from "@/firebase";
 
 export default function CreateAccountView() {
   const { navigate } = useAppStore();
   const [step, setStep] = useState(1);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState<any>({});
   const { toast } = useToast();
   const { t } = useI18n();
+  const [isLoading, setIsLoading] = useState(false);
+  const firestore = useFirestore();
 
   const totalSteps = 4;
   const progressPercent = (step / totalSteps) * 100;
 
   const stepTitles = [
-    "Basic Information",
-    "Location & Demographics",
+    "Account Credentials",
+    "Personal Information",
     "Medical Information",
     "Emergency Contact & Insurance",
   ];
+
+  const handleDataChange = (field: string, value: any) => {
+    setFormData((prev: any) => ({ ...prev, [field]: value }));
+  };
 
   const nextStep = (e: React.FormEvent) => {
     e.preventDefault();
     if (step < totalSteps) {
       setStep(step + 1);
     } else {
-      // Final step
-      toast({
-        title: "Account Created!",
-        description: "Welcome to MediMe.",
-      });
-      // In a real app, you'd save the user and log them in
-      navigate("home");
+      // Final step: Create account
+      setIsLoading(true);
+      const auth = getAuth();
+      createUserWithEmailAndPassword(auth, formData.email, formData.password)
+        .then(async (userCredential) => {
+          const user = userCredential.user;
+          await updateProfile(user, { displayName: formData.fullName });
+
+          // Save additional user data to Firestore
+          const userDocRef = doc(firestore, "patients", user.uid);
+          
+          const patientData = {
+            id: user.uid,
+            firstName: formData.fullName.split(' ')[0],
+            lastName: formData.fullName.split(' ').slice(1).join(' '),
+            email: formData.email,
+            dateOfBirth: formData.dateOfBirth,
+            gender: formData.gender,
+            contactNumber: formData.contactNumber,
+            address: `${formData.city}, ${formData.country}`,
+            medicalHistory: `Chronic Conditions: ${formData.chronicConditions?.join(', ') || 'None'}. Allergies: ${formData.allergies?.join(', ') || 'None'}.`,
+            insuranceProvider: formData.insuranceProvider,
+            insurancePolicyNumber: formData.insurancePolicyNumber,
+          };
+          
+          await setDoc(userDocRef, patientData);
+
+          toast({
+            title: "Account Created!",
+            description: "Welcome to MediMe.",
+          });
+          navigate("home");
+        })
+        .catch((error) => {
+          toast({
+            variant: "destructive",
+            title: "Account Creation Failed",
+            description: error.message,
+          });
+        })
+        .finally(() => {
+          setIsLoading(false);
+        });
     }
   };
 
@@ -68,15 +114,15 @@ export default function CreateAccountView() {
   const renderStep = () => {
     switch (step) {
       case 1:
-        return <Step1 />;
+        return <Step1 data={formData} onChange={handleDataChange} />;
       case 2:
-        return <Step2 />;
+        return <Step2 data={formData} onChange={handleDataChange} />;
       case 3:
-        return <Step3 />;
+        return <Step3 data={formData} onChange={handleDataChange} />;
       case 4:
-        return <Step4 />;
+        return <Step4 data={formData} onChange={handleDataChange} />;
       default:
-        return <Step1 />;
+        return <Step1 data={formData} onChange={handleDataChange} />;
     }
   };
 
@@ -96,7 +142,7 @@ export default function CreateAccountView() {
           <Button
             variant="link"
             className="text-primary font-semibold"
-            onClick={() => navigate("home")}
+            onClick={() => navigate("login-view")}
           >
             Cancel
           </Button>
@@ -108,7 +154,7 @@ export default function CreateAccountView() {
           {renderStep()}
           <div className="flex items-center space-x-3 pt-6">
             {step > 1 && (
-              <Button type="button" onClick={prevStep} variant="outline" size="lg">
+              <Button type="button" onClick={prevStep} variant="outline" size="lg" disabled={isLoading}>
                 <ChevronLeft className="w-5 h-5 mr-2" />
                 Back
               </Button>
@@ -117,8 +163,9 @@ export default function CreateAccountView() {
               type="submit"
               className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700"
               size="lg"
+              disabled={isLoading}
             >
-              {step === totalSteps ? (
+              {isLoading ? 'Creating Account...' : (step === totalSteps ? (
                 <>
                   <CheckCircle className="w-5 h-5 mr-2" />
                   Create Account
@@ -128,7 +175,7 @@ export default function CreateAccountView() {
                   Next
                   <ChevronRight className="w-5 h-5 ml-2" />
                 </>
-              )}
+              ))}
             </Button>
           </div>
         </form>
@@ -137,31 +184,49 @@ export default function CreateAccountView() {
   );
 }
 
-const Step1 = () => (
+const Step1 = ({ data, onChange }: { data: any, onChange: (field: string, value: any) => void }) => (
     <div className="space-y-6">
       <h3 className="text-lg font-bold text-gray-800 flex items-center">
-        <User className="w-5 h-5 mr-2 text-primary" /> Basic Information
+        <Key className="w-5 h-5 mr-2 text-primary" /> Account Credentials
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="md:col-span-2">
           <Label htmlFor="signup-name">Full Name <span className="text-red-500">*</span></Label>
-          <Input id="signup-name" type="text" placeholder="John Doe" required />
+          <Input id="signup-name" type="text" placeholder="John Doe" required value={data.fullName || ''} onChange={e => onChange('fullName', e.target.value)} />
         </div>
         <div>
           <Label htmlFor="signup-email">Email Address <span className="text-red-500">*</span></Label>
-          <Input id="signup-email" type="email" placeholder="your@email.com" required />
+          <Input id="signup-email" type="email" placeholder="your@email.com" required value={data.email || ''} onChange={e => onChange('email', e.target.value)} />
+        </div>
+         <div>
+          <Label htmlFor="signup-phone">Phone Number <span className="text-red-500">*</span></Label>
+          <Input id="signup-phone" type="tel" placeholder="+1 (555) 000-0000" required value={data.contactNumber || ''} onChange={e => onChange('contactNumber', e.target.value)} />
         </div>
         <div>
-          <Label htmlFor="signup-phone">Phone Number <span className="text-red-500">*</span></Label>
-          <Input id="signup-phone" type="tel" placeholder="+1 (555) 000-0000" required />
+          <Label htmlFor="signup-password">Password <span className="text-red-500">*</span></Label>
+          <Input id="signup-password" type="password" placeholder="••••••••" required value={data.password || ''} onChange={e => onChange('password', e.target.value)} />
         </div>
+        <div>
+          <Label htmlFor="signup-confirm-password">Confirm Password <span className="text-red-500">*</span></Label>
+          <Input id="signup-confirm-password" type="password" placeholder="••••••••" required />
+        </div>
+      </div>
+    </div>
+  );
+  
+  const Step2 = ({ data, onChange }: { data: any, onChange: (field: string, value: any) => void }) => (
+    <div className="space-y-6">
+       <h3 className="text-lg font-bold text-gray-800 flex items-center">
+        <User className="w-5 h-5 mr-2 text-primary" /> Personal Information
+      </h3>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="signup-dob">Date of Birth</Label>
-          <Input id="signup-dob" type="date" />
+          <Input id="signup-dob" type="date" value={data.dateOfBirth || ''} onChange={e => onChange('dateOfBirth', e.target.value)} />
         </div>
         <div>
           <Label htmlFor="signup-gender">Gender</Label>
-          <Select>
+          <Select value={data.gender || ''} onValueChange={value => onChange('gender', value)}>
             <SelectTrigger id="signup-gender">
               <SelectValue placeholder="Select gender" />
             </SelectTrigger>
@@ -172,75 +237,19 @@ const Step1 = () => (
             </SelectContent>
           </Select>
         </div>
-      </div>
-    </div>
-  );
-  
-  const Step2 = () => (
-    <div className="space-y-6">
-      <h3 className="text-lg font-bold text-gray-800 flex items-center">
-        <MapPin className="w-5 h-5 mr-2 text-purple-600" /> Location & Demographics
-      </h3>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-            <Label htmlFor="signup-country">Country</Label>
-            <Select>
-                <SelectTrigger id="signup-country"><SelectValue placeholder="Select country" /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="Egypt">Egypt</SelectItem>
-                    <SelectItem value="Saudi Arabia">Saudi Arabia</SelectItem>
-                    <SelectItem value="UAE">United Arab Emirates</SelectItem>
-                    <SelectItem value="USA">United States</SelectItem>
-                    <SelectItem value="UK">United Kingdom</SelectItem>
-                    <SelectItem value="Canada">Canada</SelectItem>
-                    <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-            </Select>
-        </div>
-        <div>
-            <Label htmlFor="signup-city">City</Label>
-            <Input id="signup-city" type="text" placeholder="Cairo, Alexandria, etc." />
-        </div>
-        <div className="md:col-span-2">
-            <Label htmlFor="signup-marital">Marital Status</Label>
-            <Select>
-                <SelectTrigger id="signup-marital"><SelectValue placeholder="Select status" /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="single">Single</SelectItem>
-                    <SelectItem value="married">Married</SelectItem>
-                    <SelectItem value="divorced">Divorced</SelectItem>
-                    <SelectItem value="widowed">Widowed</SelectItem>
-                </SelectContent>
-            </Select>
+         <div className="md:col-span-2">
+            <Label htmlFor="signup-address">Address</Label>
+            <Input id="signup-address" type="text" placeholder="123 Health St, Medville" value={data.address || ''} onChange={e => onChange('address', e.target.value)} />
         </div>
       </div>
     </div>
   );
   
-  const Step3 = () => (
+  const Step3 = ({ data, onChange }: { data: any, onChange: (field: string, value: any) => void }) => (
     <div className="space-y-6">
         <h3 className="text-lg font-bold text-gray-800 flex items-center">
             <Heart className="w-5 h-5 mr-2 text-red-600" /> Medical Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-            <div>
-                <Label>Blood Type</Label>
-                <Select><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="A+">A+</SelectItem>
-                    <SelectItem value="A-">A-</SelectItem>
-                    <SelectItem value="B+">B+</SelectItem>
-                    <SelectItem value="B-">B-</SelectItem>
-                    <SelectItem value="AB+">AB+</SelectItem>
-                    <SelectItem value="AB-">AB-</SelectItem>
-                    <SelectItem value="O+">O+</SelectItem>
-                    <SelectItem value="O-">O-</SelectItem>
-                </SelectContent></Select>
-            </div>
-            <div><Label>Height (cm)</Label><Input type="number" min="0" placeholder="170" /></div>
-            <div><Label>Weight (kg)</Label><Input type="number" min="0" placeholder="70" /></div>
-        </div>
-
         <div className="space-y-2"><Label>Chronic Conditions</Label><div className="grid grid-cols-2 gap-2">
             {['Diabetes', 'Hypertension', 'Asthma', 'Heart Disease', 'Arthritis', 'Thyroid Disorder', 'COPD', 'None'].map(item =>
             <div key={item} className="flex items-center space-x-2"><Checkbox id={`cond-${item}`} /><Label htmlFor={`cond-${item}`} className="text-sm font-normal">{item}</Label></div>)}
@@ -250,25 +259,10 @@ const Step1 = () => (
             {['Penicillin', 'Peanuts', 'Shellfish', 'Latex', 'Sulfa Drugs', 'None'].map(item =>
             <div key={item} className="flex items-center space-x-2"><Checkbox id={`allergy-${item}`} /><Label htmlFor={`allergy-${item}`} className="text-sm font-normal">{item}</Label></div>)}
         </div></div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div><Label>Previous Operations <span className="text-gray-400">(optional)</span></Label><Textarea rows={2} placeholder="List any surgeries" /></div>
-            <div><Label>Transplants <span className="text-gray-400">(optional)</span></Label><Select><SelectTrigger><SelectValue placeholder="Select if applicable" /></SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="None">None</SelectItem>
-                    <SelectItem value="Kidney">Kidney</SelectItem>
-                    <SelectItem value="Liver">Liver</SelectItem>
-                    <SelectItem value="Heart">Heart</SelectItem>
-                    <SelectItem value="Lung">Lung</SelectItem>
-                </SelectContent></Select>
-            </div>
-        </div>
-        
-        <div className="flex items-center space-x-2"><Checkbox id="organ-donor" /><Label htmlFor="organ-donor">Register as an organ donor</Label></div>
     </div>
   );
   
-  const Step4 = () => (
+  const Step4 = ({ data, onChange }: { data: any, onChange: (field: string, value: any) => void }) => (
     <div className="space-y-6">
       <h3 className="text-lg font-bold text-gray-800 flex items-center">
         <Phone className="w-5 h-5 mr-2 text-orange-600" /> Emergency Contact
@@ -279,11 +273,11 @@ const Step1 = () => (
       </div>
   
       <h3 className="text-lg font-bold text-gray-800 flex items-center">
-        <Heart className="w-5 h-5 mr-2 text-blue-600" /> Insurance Information <span className="text-gray-400 text-sm font-normal ml-2">(optional)</span>
+        <Shield className="w-5 h-5 mr-2 text-blue-600" /> Insurance Information <span className="text-gray-400 text-sm font-normal ml-2">(optional)</span>
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div><Label>Insurance Provider</Label><Input type="text" placeholder="Blue Cross, Aetna, etc." /></div>
-        <div><Label>Member ID</Label><Input type="text" placeholder="ABC123456789" /></div>
+        <div><Label>Insurance Provider</Label><Input type="text" placeholder="Blue Cross, Aetna, etc." value={data.insuranceProvider || ''} onChange={e => onChange('insuranceProvider', e.target.value)} /></div>
+        <div><Label>Member ID / Policy Number</Label><Input type="text" placeholder="ABC123456789" value={data.insurancePolicyNumber || ''} onChange={e => onChange('insurancePolicyNumber', e.target.value)} /></div>
       </div>
     </div>
   );

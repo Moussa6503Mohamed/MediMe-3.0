@@ -8,7 +8,7 @@ import {
 } from "react";
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand";
-import type { OrderDetails, Insurance } from "@/lib/types";
+import type { OrderDetails, Insurance, CurrentUser } from "@/lib/types";
 import { doctors } from "@/lib/data";
 
 type Page =
@@ -54,7 +54,7 @@ interface AppState {
   activeReportId: string | null;
   selectedDay: number;
   isLoggedIn: boolean;
-  currentUser: any;
+  currentUser: CurrentUser | null;
   refillCart: string[];
   selectedPharmacyId: string | null;
   lastOrder: OrderDetails | null;
@@ -92,7 +92,7 @@ interface AppActions {
   setActiveScheduleItemId: (id: string | null) => void;
   setActiveReportId: (id: string | null) => void;
   setSelectedDay: (day: number) => void;
-  login: (user: any) => void;
+  login: (user: CurrentUser | null) => void;
   logout: () => void;
   setRefillCart: (cart: string[]) => void;
   setSelectedPharmacyId: (id: string | null) => void;

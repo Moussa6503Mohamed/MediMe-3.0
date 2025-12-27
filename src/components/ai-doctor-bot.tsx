@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Bot, Send, User, Loader2 } from "lucide-react";
 import { runAiDoctorBot } from "@/app/actions";
-import { userProfile } from "@/lib/data";
+import { useAuth } from "@/hooks/use-auth";
 
 type Message = {
   role: "user" | "bot";
@@ -23,6 +23,7 @@ type Message = {
 };
 
 export default function AiDoctorBot() {
+  const { currentUser } = useAuth();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "bot",
@@ -71,7 +72,7 @@ export default function AiDoctorBot() {
     }
   };
 
-  const userInitials = userProfile.name.split(' ').map(n => n[0]).join('');
+  const userInitials = currentUser?.displayName?.split(' ').map(n => n[0]).join('') || 'U';
 
   return (
     <Card className="flex h-[34rem] flex-col">
@@ -116,7 +117,6 @@ export default function AiDoctorBot() {
                 </div>
                 {message.role === "user" && (
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={userProfile.avatarUrl} data-ai-hint="person portrait" />
                     <AvatarFallback>{userInitials}</AvatarFallback>
                   </Avatar>
                 )}

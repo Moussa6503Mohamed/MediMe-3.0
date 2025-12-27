@@ -1,3 +1,5 @@
+import { type User } from "firebase/auth";
+
 export type Appointment = {
     id: string;
     doctor: string;
@@ -5,7 +7,6 @@ export type Appointment = {
     date: Date;
     time: string;
     location: string;
-    avatarUrl: string;
   };
   
   export type Medication = {
@@ -30,7 +31,6 @@ export type Appointment = {
     id: string;
     name: string;
     relationship: string;
-    avatarUrl: string;
     dob: string;
     bloodType: string;
     primaryDoctor: string;
@@ -134,4 +134,6 @@ export type Appointment = {
     total: string;
     orderNumber: number;
   };
+
+  export type CurrentUser = User;
   

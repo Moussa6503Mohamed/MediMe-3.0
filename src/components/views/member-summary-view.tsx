@@ -3,7 +3,7 @@
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
 import { familyMembers, dailySchedule, medications, medicalRecords } from "@/lib/data";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Cake,
   Droplets,
@@ -53,7 +53,6 @@ export default function MemberSummaryView() {
 
       <div className="p-6 mb-6 bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl shadow-lg flex flex-col items-center text-center">
         <Avatar className="w-20 h-20 border-4 border-white shadow-lg">
-          <AvatarImage src={member.avatarUrl} alt={member.name} data-ai-hint="person portrait" />
           <AvatarFallback>{member.name.slice(0, 2)}</AvatarFallback>
         </Avatar>
         <h2 className="text-2xl font-bold text-gray-800 mt-3">{member.name}</h2>

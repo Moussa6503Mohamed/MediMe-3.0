@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Cairo } from "next/font/google";
 import "./globals.css";
 import AppProvider from "@/store/app-provider";
+import { FirebaseClientProvider } from "@/firebase";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 const cairo = Cairo({ subsets: ["arabic"], variable: "--font-cairo" });
@@ -19,7 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${cairo.variable} font-inter`}>
-        <AppProvider>{children}</AppProvider>
+        <FirebaseClientProvider>
+          <AppProvider>{children}</AppProvider>
+        </FirebaseClientProvider>
       </body>
     </html>
   );

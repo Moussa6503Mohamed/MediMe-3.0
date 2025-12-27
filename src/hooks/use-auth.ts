@@ -1,19 +1,27 @@
 "use client";
 import { useAppStore } from "@/store/app-store";
+import { useUser } from "@/firebase";
+import { useEffect } from "react";
 
 export const useAuth = () => {
-  const { isLoggedIn, currentUser, login, logout } = useAppStore((state) => ({
-    isLoggedIn: state.isLoggedIn,
-    currentUser: state.currentUser,
-    login: state.login,
-    logout: state.logout,
-  }));
+  const { login, logout, isLoggedIn, currentUser } = useAppStore();
+  const { user, isUserLoading } = useUser();
 
-  const createAccount = (userData: any) => {
-    // In a real app, this would hit an API
-    console.log("Creating account:", userData);
-    login(userData);
+  useEffect(() => {
+    if (!isUserLoading) {
+      if (user && !isLoggedIn) {
+        login(user);
+      } else if (!user && isLoggedIn) {
+        logout();
+      }
+    }
+  }, [user, isUserLoading, isLoggedIn, login, logout]);
+
+  return {
+    isLoggedIn: !!user,
+    currentUser: user,
+    isUserLoading,
+    login,
+    logout,
   };
-
-  return { isLoggedIn, currentUser, login, logout, createAccount };
 };

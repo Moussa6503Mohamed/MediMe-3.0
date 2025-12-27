@@ -9,23 +9,16 @@ import type {
     Pharmacy,
     ScheduleItem,
     Notification,
-    ActionButton,
     Insurance,
     DoctorReport,
   } from "./types";
   
   
-  export const userProfile = {
-      name: "Saleh Al-Jamil",
-      email: "saleh.aljamil@example.com",
-      avatarUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxtYWxlJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzY2NzU0MzU5fDA&ixlib=rb-4.1.0&q=80&w=1080",
-  };
-  
   export const familyMembers: FamilyMember[] = [
-      { id: 'aa-001', name: 'Mohamed Moussa', relationship: 'Self', avatarUrl: userProfile.avatarUrl, dob: 'January 1, 1980', bloodType: 'O+', primaryDoctor: 'Dr. Amr Mostafa' },
-      { id: 'ah-002', name: 'Mohamed Ashraf', relationship: 'Brother', avatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxtYWxlJTIwcG9ydHJhaXR8ZW58MHx8fHwxNzY2NzU0MzU5fDA&ixlib=rb-4.1.0&q=80&w=1080', dob: 'May 10, 1978', bloodType: 'A-', primaryDoctor: 'Dr. Sara Emad' },
-      { id: 'ya-003', name: 'Youssef El Bezry', relationship: 'Child', avatarUrl: 'https://images.unsplash.com/photo-1525134479668-1bee5c7c6845?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwxfHxjaGlsZHxlbnwwfHx8fDE3NjY3NTQzODd8MA&ixlib=rb-4.1.0&q=80&w=1080', dob: 'August 15, 2015', bloodType: 'B+', primaryDoctor: 'Dr. Mona Kamal' },
-      { id: 'ya-004', name: 'Youssef Awaad', relationship: 'Child', avatarUrl: 'https://images.unsplash.com/photo-1503454455857-58a69d12a452?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3NDE5ODJ8MHwxfHNlYXJjaHwyfHxjaGlsZHxlbnwwfHx8fDE3NjY3NTQzODd8MA&ixlib=rb-4.1.0&q=80&w=1080', dob: 'March 22, 2017', bloodType: 'O-', primaryDoctor: 'Dr. Mona Kamal' },
+      { id: 'aa-001', name: 'Mohamed Moussa', relationship: 'Self', dob: 'January 1, 1980', bloodType: 'O+', primaryDoctor: 'Dr. Amr Mostafa' },
+      { id: 'ah-002', name: 'Mohamed Ashraf', relationship: 'Brother', dob: 'May 10, 1978', bloodType: 'A-', primaryDoctor: 'Dr. Sara Emad' },
+      { id: 'ya-003', name: 'Youssef El Bezry', relationship: 'Child', dob: 'August 15, 2015', bloodType: 'B+', primaryDoctor: 'Dr. Mona Kamal' },
+      { id: 'ya-004', name: 'Youssef Awaad', relationship: 'Child', dob: 'March 22, 2017', bloodType: 'O-', primaryDoctor: 'Dr. Mona Kamal' },
   ];
   
   export const savedInsurance: Insurance = { provider: 'Blue Cross Blue Shield', memberId: 'ABC12345678' };
@@ -118,3 +111,77 @@ import type {
           textColor: 'text-teal-800'
       },
   ];
+
+  export const upcomingAppointments: Omit<Appointment, 'id' | 'avatarUrl'>[] = [
+    {
+      doctor: "Dr. Abdel-Fattah Ahmed",
+      specialty: "Cardiology",
+      date: new Date("2024-07-26T10:30:00"),
+      time: "10:30 AM",
+      location: "City Hospital, Room 204",
+    },
+    {
+      doctor: "Dr. Hussein Ahmed",
+      specialty: "General Practice",
+      date: new Date("2024-08-05T14:00:00"),
+      time: "02:00 PM",
+      location: "Northside Clinic",
+    },
+  ].map(appt => ({ ...appt, id: crypto.randomUUID(), avatarUrl: '' }));
+  
+  export const currentMedications: Medication[] = [
+    {
+      name: "Lisinopril",
+      dosage: "10mg",
+      frequency: "Once Daily",
+      prescribingDoctor: "Dr. Hussein",
+      stockDoses: 28,
+      totalDoses: 30,
+      color: 'text-cyan-700',
+      price: 25.50
+    },
+    {
+      name: "Amoxicillin",
+      dosage: "500mg",
+      frequency: "Twice Daily",
+      prescribingDoctor: "Dr. Abdel-Fattah",
+      stockDoses: 1,
+      totalDoses: 14,
+      color: 'text-red-700',
+      price: 30.75
+    },
+    {
+      name: "Multivitamin",
+      dosage: "1 tab",
+      frequency: "Daily",
+      prescribingDoctor: "Dr. Hussein",
+      stockDoses: 5,
+      totalDoses: 90,
+      color: 'text-orange-700',
+      price: 15.00
+    },
+  ];
+
+  export const recentReports: Omit<MedicalReport, 'id'>[] = [
+    {
+        title: "Blood Panel Results",
+        date: new Date("2024-07-15"),
+        type: "Lab Result"
+    },
+    {
+        title: "Cardiology Follow-Up Notes",
+        date: new Date("2024-07-10"),
+        type: "Doctor's Note"
+    },
+    {
+        title: "Chest X-Ray Analysis",
+        date: new Date("2024-07-01"),
+        type: "Imaging"
+    }
+  ].map(report => ({ ...report, id: crypto.randomUUID() }));
+  
+  
+  
+  
+  
+  

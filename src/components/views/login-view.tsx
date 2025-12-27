@@ -1,24 +1,39 @@
 "use client";
 
-import { useAuth } from "@/hooks/use-auth";
+import { useState } from "react";
+import { useAppStore } from "@/store/app-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useAppStore } from "@/store/app-store";
+import { getAuth, signInWithEmailAndPassword } from "firebase/auth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LoginView() {
-  const { login } = useAuth();
   const { navigate } = useAppStore();
+  const [email, setEmail] = useState("demo@medime.com");
+  const [password, setPassword] = useState("demo123");
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    // Simple mock login
-    const user = {
-      email: "demo@medime.com",
-      name: "Saleh Al-Jamil",
-    };
-    login(user);
-    navigate("home");
+    setIsLoading(true);
+    const auth = getAuth();
+    signInWithEmailAndPassword(auth, email, password)
+      .then((userCredential) => {
+        // Signed in
+        navigate("home");
+      })
+      .catch((error) => {
+        toast({
+          variant: "destructive",
+          title: "Login Failed",
+          description: error.message,
+        });
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
   };
 
   return (
@@ -43,8 +58,10 @@ export default function LoginView() {
                 type="email"
                 id="email"
                 placeholder="your@email.com"
-                defaultValue="demo@medime.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
 
@@ -54,13 +71,15 @@ export default function LoginView() {
                 type="password"
                 id="password"
                 placeholder="••••••••"
-                defaultValue="demo123"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
+                disabled={isLoading}
               />
             </div>
 
-            <Button type="submit" className="w-full" size="lg">
-              Sign In
+            <Button type="submit" className="w-full" size="lg" disabled={isLoading}>
+              {isLoading ? "Signing In..." : "Sign In"}
             </Button>
           </form>
 
