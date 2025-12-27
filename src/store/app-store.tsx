@@ -10,7 +10,6 @@ import {
 import { useStore } from "zustand";
 import { createStore, type StoreApi } from "zustand";
 import type { OrderDetails, Insurance, CurrentUser } from "@/lib/types";
-import { doctors } from "@/lib/data";
 
 type Page =
   | "home"
@@ -69,6 +68,7 @@ interface AppState {
   useSavedInsurance: boolean;
   chatHistory: { role: 'user' | 'model'; text: string; includeButton?: boolean }[];
   isBotLoading: boolean;
+  lastVoiceCommand: string | null;
 }
 
 interface PageNavigationOptions {
@@ -109,39 +109,46 @@ interface AppActions {
   setChatHistory: (history: { role: 'user' | 'model'; text: string }[]) => void;
   setIsBotLoading: (loading: boolean) => void;
   setActiveScheduleItemStatus: (id: string, isCompleted: boolean) => void;
+  setLastVoiceCommand: (command: string | null) => void;
 }
 
 export type AppStore = AppState & AppActions;
+
+const createInitialState = (): AppState => ({
+  currentPage: "home",
+  pageHistory: ["home"],
+  language: "en",
+  isVoiceAssistantActive: false,
+  activeMemberId: null,
+  viewingMemberId: null,
+  activeDoctorId: null,
+  activeScheduleItemId: null,
+  activeReportId: null,
+  selectedDay: new Date().getDate(),
+  isLoggedIn: false,
+  currentUser: null,
+  refillCart: [],
+  selectedPharmacyId: null,
+  lastOrder: null,
+  selectedSpecialty: 'General Practitioner',
+  selectedDate: new Date().toISOString().split('T')[0],
+  selectedAppointmentTime: null,
+  selectedCountry: 'Egypt',
+  selectedCity: 'Alexandria',
+  selectedArea: 'Any Area',
+  savedInsurance: { provider: 'Blue Cross Blue Shield', memberId: 'ABC12345678' },
+  useSavedInsurance: true,
+  chatHistory: [],
+  isBotLoading: false,
+  lastVoiceCommand: null,
+});
+
 
 export const createAppStore = (
   initialState: Partial<AppState> = {}
 ): StoreApi<AppStore> => {
   return createStore<AppStore>((set, get) => ({
-    currentPage: "home",
-    pageHistory: ["home"],
-    language: "en",
-    isVoiceAssistantActive: false,
-    activeMemberId: "aa-001",
-    viewingMemberId: "aa-001",
-    activeDoctorId: null,
-    activeScheduleItemId: null,
-    activeReportId: null,
-    selectedDay: new Date().getDate(),
-    isLoggedIn: false,
-    currentUser: null,
-    refillCart: [],
-    selectedPharmacyId: null,
-    lastOrder: null,
-    selectedSpecialty: 'General Practitioner',
-    selectedDate: new Date().toISOString().split('T')[0],
-    selectedAppointmentTime: null,
-    selectedCountry: 'Egypt',
-    selectedCity: 'Alexandria',
-    selectedArea: 'Any Area',
-    savedInsurance: { provider: 'Blue Cross Blue Shield', memberId: 'ABC12345678' },
-    useSavedInsurance: true,
-    chatHistory: [],
-    isBotLoading: false,
+    ...createInitialState(),
     ...initialState,
 
     navigate: (page, options) => set(state => {
@@ -169,8 +176,16 @@ export const createAppStore = (
     setActiveScheduleItemId: (id) => set({ activeScheduleItemId: id }),
     setActiveReportId: (id) => set({ activeReportId: id }),
     setSelectedDay: (day) => set({ selectedDay: day }),
-    login: (user) => set({ isLoggedIn: true, currentUser: user, currentPage: 'home', pageHistory: ['home'] }),
-    logout: () => set({ isLoggedIn: false, currentUser: null, currentPage: 'login-view', pageHistory: ['login-view'] }),
+    login: (user) => set({
+        ...createInitialState(), // Reset state on login
+        isLoggedIn: true,
+        currentUser: user,
+        activeMemberId: user?.uid, // Set active member to self
+        viewingMemberId: user?.uid, // Set viewing member to self
+        currentPage: 'home',
+        pageHistory: ['home']
+    }),
+    logout: () => set({ ...createInitialState(), isLoggedIn: false, currentUser: null, currentPage: 'login-view', pageHistory: ['login-view'] }),
     setRefillCart: (cart) => set({ refillCart: cart }),
     setSelectedPharmacyId: (id) => set({ selectedPharmacyId: id }),
     setLastOrder: (order) => set({ lastOrder: order }),
@@ -188,6 +203,7 @@ export const createAppStore = (
         // This is a mock update. In a real app, you would update the data source.
         console.log(`Setting status for item ${id} to ${isCompleted}`);
     },
+    setLastVoiceCommand: (command) => set({ lastVoiceCommand: command }),
   }));
 };
 

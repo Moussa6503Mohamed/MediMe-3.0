@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Card,
   CardContent,
@@ -12,10 +13,11 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, Send, User, Loader2 } from "lucide-react";
 import { runAiDoctorBot } from "@/app/actions";
 import { useAuth } from "@/hooks/use-auth";
+import { useAppStore } from "@/store/app-store";
 
 type Message = {
   role: "user" | "bot";
@@ -24,6 +26,7 @@ type Message = {
 
 export default function AiDoctorBot() {
   const { currentUser } = useAuth();
+  const { lastVoiceCommand, setLastVoiceCommand } = useAppStore();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "bot",
@@ -34,17 +37,16 @@ export default function AiDoctorBot() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const handleSendMessage = async (messageText: string) => {
+    if (!messageText.trim() || isLoading) return;
 
-    const userMessage: Message = { role: "user", content: input };
+    const userMessage: Message = { role: "user", content: messageText };
     setMessages((prev) => [...prev, userMessage]);
-    setInput("");
+    if (input) setInput("");
     setIsLoading(true);
 
     try {
-      const result = await runAiDoctorBot({ symptoms: input, patientInfo: 'Adult male' });
+      const result = await runAiDoctorBot({ symptoms: messageText, patientInfo: 'Adult male' });
       const botMessage: Message = {
         role: "bot",
         content: (
@@ -72,10 +74,22 @@ export default function AiDoctorBot() {
     }
   };
 
+  useEffect(() => {
+    if (lastVoiceCommand) {
+      handleSendMessage(lastVoiceCommand);
+      setLastVoiceCommand(null); // Clear the command after using it
+    }
+  }, [lastVoiceCommand, setLastVoiceCommand]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleSendMessage(input);
+  };
+
   const userInitials = currentUser?.displayName?.split(' ').map(n => n[0]).join('') || 'U';
 
   return (
-    <Card className="flex h-[34rem] flex-col">
+    <Card className="flex h-full flex-col">
       <CardHeader>
         <div className="flex items-center gap-3">
             <div className="grid h-10 w-10 place-items-center rounded-full bg-primary/10">

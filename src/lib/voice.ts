@@ -6,13 +6,20 @@ import { AppStore } from "@/store/app-store";
 
 let voiceRecognition: SpeechRecognition | null = null;
 let toast: ({ ...props }: Toast) => any;
+let navigate: AppStore["navigate"];
+let setLastVoiceCommand: AppStore["setLastVoiceCommand"];
 
 export const initVoiceAssistant = (
   language: "en" | "ar",
-  t: (key: string) => string,
-  toastFn: typeof toast
+  t: (key: string, params?: Record<string, string | number>) => string,
+  toastFn: typeof toast,
+  navigateFn: typeof navigate,
+  setLastVoiceCommandFn: typeof setLastVoiceCommand
 ) => {
   toast = toastFn;
+  navigate = navigateFn;
+  setLastVoiceCommand = setLastVoiceCommandFn;
+
   if (typeof window !== "undefined") {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -25,7 +32,7 @@ export const initVoiceAssistant = (
       voiceRecognition.onresult = (event) => {
         const transcript = event.results[0][0].transcript;
         toast({ title: `Command: "${transcript}"` });
-        // handleVoiceCommand(transcript, useAppStore.getState().navigate, t);
+        handleVoiceCommand(transcript, t);
       };
 
       voiceRecognition.onerror = (event) => {
@@ -46,6 +53,13 @@ export const initVoiceAssistant = (
             variant: "destructive",
           });
         }
+        // Ensure the assistant stops on error
+        useAppStore.getState().stopVoiceAssistant();
+      };
+
+      voiceRecognition.onend = () => {
+        // Stop the assistant UI when recognition ends
+        useAppStore.getState().stopVoiceAssistant();
       };
     }
   }
@@ -75,11 +89,23 @@ export const startVoiceAssistant = (
 
 const handleVoiceCommand = (
   command: string,
-  navigate: AppStore["navigate"],
-  t: (key: string) => string
+  t: (key: string, params?: Record<string, string | number>) => string
 ) => {
   const lowerCommand = command.toLowerCase();
+  const { currentPage } = useAppStore.getState();
 
+  // Command for DoctorBot
+  if (currentPage === 'doctor-bot') {
+    if (lowerCommand.includes('exit') || lowerCommand.includes('go back')) {
+        toast({ title: t("navigatingDashboard") });
+        navigate("home");
+    } else {
+        setLastVoiceCommand(command);
+    }
+    return;
+  }
+
+  // General navigation commands
   if (lowerCommand.includes("go home") || lowerCommand.includes("dashboard")) {
     toast({ title: t("navigatingDashboard") });
     navigate("home");
@@ -92,9 +118,18 @@ const handleVoiceCommand = (
   } else if (lowerCommand.includes("medication")) {
     toast({ title: t("accessingMedications") });
     navigate("medication-manager-view");
-  } else if (lowerCommand.includes("doctor bot")) {
+  } else if (lowerCommand.includes("family") || lowerCommand.includes("members")) {
+    toast({ title: t('navigatingTo', { page: t('family')})});
+    navigate("family-list");
+  } else if (lowerCommand.includes("report")) {
+    toast({ title: t('navigatingTo', { page: t('myReports')})});
+    navigate("reports-list-view");
+  } else if (lowerCommand.includes("doctor bot") || lowerCommand.includes("ai chat")) {
     toast({ title: t("openingDoctorBot") });
     navigate("doctor-bot");
+  } else if (lowerCommand.includes("add member")) {
+    toast({ title: t("openingAddMemberForm") });
+    navigate("add-member-form");
   } else {
     toast({
       title: t("commandNotUnderstood"),

@@ -1,14 +1,25 @@
+
 "use client";
 
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
 import { Home, Calendar, Pill, Users, Mic } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { startVoiceAssistant } from "@/lib/voice";
 
 const FooterNav = () => {
-  const { currentPage, navigate, isVoiceAssistantActive, toggleVoiceAssistant } =
-    useAppStore();
+  const {
+    currentPage,
+    navigate,
+    isVoiceAssistantActive,
+    startVoiceAssistant: start,
+    stopVoiceAssistant: stop,
+  } = useAppStore();
   const { t } = useI18n();
+
+  const handleMicClick = () => {
+    startVoiceAssistant(isVoiceAssistantActive, start, stop, t);
+  };
 
   const navItems = [
     {
@@ -59,7 +70,7 @@ const FooterNav = () => {
       ))}
 
       <button
-        onClick={toggleVoiceAssistant}
+        onClick={handleMicClick}
         className={cn(
           "relative p-4 rounded-full shadow-xl transition duration-300 transform scale-100 active:scale-95 text-white",
           isVoiceAssistantActive

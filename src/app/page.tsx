@@ -34,18 +34,19 @@ import ProfileView from "@/components/views/profile-view";
 import { useI18n } from "@/hooks/use-i18n";
 import { initVoiceAssistant } from "@/lib/voice";
 import { useToast } from "@/hooks/use-toast";
+import InvitationDetailView from "@/components/views/invitation-detail-view";
 
 export default function Home() {
-  const { isLoggedIn, currentUser } = useAuth();
-  const { currentPage, language } = useAppStore();
+  const { isLoggedIn } = useAuth();
+  const { currentPage, language, navigate, setLastVoiceCommand } = useAppStore();
   const { t, setLanguage } = useI18n();
   const { toast } = useToast();
 
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
-    initVoiceAssistant(language, t, toast);
-  }, [language, setLanguage, t, toast]);
+    initVoiceAssistant(language, t, toast, navigate, setLastVoiceCommand);
+  }, [language, setLanguage, t, toast, navigate, setLastVoiceCommand]);
 
   const renderContent = () => {
     if (!isLoggedIn) {
@@ -80,6 +81,9 @@ export default function Home() {
         break;
       case "notifications-view":
         view = <NotificationsView />;
+        break;
+      case "invitation-detail-view":
+        view = <InvitationDetailView />;
         break;
       case "chat-summary-view":
         view = <ChatSummaryView />;
