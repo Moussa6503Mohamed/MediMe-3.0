@@ -1,0 +1,210 @@
+/**
+ * @file firestore.rules
+ * @description Firestore Security Rules for the MediMe Healthcare Platform.
+ *
+ * @version 1.0.0
+ *
+ * @section Core Philosophy
+ * This ruleset enforces a strict, user-centric ownership model. The fundamental principle
+ * is that users, whether they are patients or doctors, have exclusive control over their
+ * own data. Access is granted based on the user's authenticated UID matching the ID in
+ * the document path (e.g., /patients/{userId}).
+ *
+ * @section Data Structure
+ * The data is organized into two primary top-level collections: `/patients` and `/doctors`.
+ * All sensitive patient data, such as appointments, medications, and medical reports, is
+ * stored in subcollections under the specific patient's document (e.g.,
+ * /patients/{patientId}/appointments/{appointmentId}). This hierarchical structure
+ * naturally isolates user data and simplifies security rules.
+ *
+ * @section Key Security Decisions
+ * - **Default Deny:** All access is denied by default. Rules only grant permissions explicitly.
+ * - **No Public Listing:** Listing the top-level `/patients` or `/doctors` collections is
+ *   strictly forbidden to protect user privacy and prevent data enumeration attacks.
+ * - **Strict Ownership:** A user can only access documents within their own data tree
+ *   (e.g., a user with UID 'abc' can access /patients/abc but not /patients/xyz).
+ * - **Collaborator Access:** For specific documents like Appointments, read and update
+ *   access is granted to both the patient (owner) and the doctor associated with the
+ *   appointment via a denormalized `doctorId` field on the document itself.
+ * - **Prototyping Flexibility:** These rules prioritize authorization over schema validation.
+ *   They do not enforce specific data types or field presence, allowing for rapid
+ *   application development, except for fields critical to security (e.g., ownership IDs).
+ *
+ * @section Denormalization for Authorization
+ * To ensure performant and secure access control, authorization data is denormalized. For
+ * example, the `Appointment` document contains a `doctorId` field. This allows the rules
+ * to grant the specified doctor access without needing slow and costly `get()` or `exists()`
+ * calls to other collections.
+ *
+ * @section Structural Segregation
+ * Patient and Doctor data are kept in separate top-level collections. Furthermore, all
+ * patient-related data is nested within that patient's document tree. This clean separation
+ * ensures that rules for one data type do not unintentionally affect another and makes
+ * list operations on subcollections inherently secure.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // -------------------------------------------------------------------------
+    // Helper Functions
+    // -------------------------------------------------------------------------
+
+    /**
+     * @description Checks if the user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * @description Checks if the authenticated user's UID matches the provided userId.
+     * This is the core of the ownership model.
+     * @param userId The UID to check against.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * @description Checks if a document currently exists.
+     * Crucial for secure update and delete operations.
+     */
+    function isExistingDoc() {
+      return resource != null;
+    }
+
+    /**
+     * @description On create, validates that the document's internal `id` field
+     * matches the user's auth UID, establishing a secure ownership link.
+     * @param userId The document ID from the path, which must match the user's UID.
+     */
+    function isCreatingOwnProfile(userId) {
+      return isOwner(userId) && request.resource.data.id == userId;
+    }
+
+    /**
+     * @description On update, ensures the document's internal `id` field
+     * cannot be changed, preventing ownership hijacking.
+     */
+    function isIdImmutable() {
+      return request.resource.data.id == resource.data.id;
+    }
+
+    /**
+     * @description On create, validates that a subcollection document's internal
+     * `patientId` field matches the `patientId` from the document path.
+     * @param patientId The patientId from the path.
+     */
+    function createdWithCorrectPatientId(patientId) {
+      return request.resource.data.patientId == patientId;
+    }
+
+    /**
+     * @description On update, ensures the `patientId` field on a subcollection
+     * document is immutable.
+     */
+    function isPatientIdImmutable() {
+      return request.resource.data.patientId == resource.data.patientId;
+    }
+
+    /**
+     * @description Checks if the requesting user is the doctor assigned to the
+     * appointment being accessed. Reads the `doctorId` from the existing document.
+     */
+    function isDoctorForAppointment() {
+      return isSignedIn() && isExistingDoc() && request.auth.uid == resource.data.doctorId;
+    }
+
+    // -------------------------------------------------------------------------
+    // Collection Rules
+    // -------------------------------------------------------------------------
+
+    /**
+     * @description Patient Profile: Stores a patient's personal and medical information.
+     * @path /patients/{patientId}
+     * @allow (create) A new user can create their own patient profile.
+     * @deny (create) A user cannot create a profile for another user.
+     * @allow (read, update, delete) An authenticated user can manage their own profile.
+     * @deny (read, update, delete) A user cannot access another patient's profile.
+     * @deny (list) Listing all patients is forbidden to protect privacy.
+     * @principle Restricts access to a user's own data tree (Self-Creation & Ownership).
+     */
+    match /patients/{patientId} {
+      allow get: if isOwner(patientId);
+      allow list: if false;
+      allow create: if isCreatingOwnProfile(patientId);
+      allow update: if isOwner(patientId) && isExistingDoc() && isIdImmutable();
+      allow delete: if isOwner(patientId) && isExistingDoc();
+
+      /**
+       * @description Patient Appointments: Medical appointments for a patient.
+       * @path /patients/{patientId}/appointments/{appointmentId}
+       * @allow (read, update) The patient or the assigned doctor can view/update an appointment.
+       * @deny (read, update) A user who is not the patient or assigned doctor cannot access it.
+       * @allow (create, delete) Only the patient can create or delete their appointments.
+       * @allow (list) The patient can list all of their own appointments.
+       * @principle Enforces a shared access model between the patient and the doctor.
+       */
+      match /appointments/{appointmentId} {
+        allow get: if isOwner(patientId) || isDoctorForAppointment();
+        allow list: if isOwner(patientId);
+        allow create: if isOwner(patientId) && createdWithCorrectPatientId(patientId);
+        allow update: if (isOwner(patientId) || isDoctorForAppointment()) && isPatientIdImmutable() && request.resource.data.doctorId == resource.data.doctorId;
+        allow delete: if isOwner(patientId) && isExistingDoc();
+      }
+
+      /**
+       * @description Patient Medications: Prescribed medications for a patient.
+       * @path /patients/{patientId}/medications/{medicationId}
+       * @allow (all) Only the patient can CRUD their own medication records.
+       * @deny (all) Another user cannot access a patient's medication list.
+       * @principle Enforces strict data ownership. Access for other roles (e.g., doctors)
+       *            is not possible without a denormalized ID field (e.g., 'prescriberId')
+       *            on this document.
+       */
+      match /medications/{medicationId} {
+        allow get: if isOwner(patientId);
+        allow list: if isOwner(patientId);
+        allow create: if isOwner(patientId) && createdWithCorrectPatientId(patientId);
+        allow update: if isOwner(patientId) && isExistingDoc() && isPatientIdImmutable();
+        allow delete: if isOwner(patientId) && isExistingDoc();
+      }
+
+      /**
+       * @description Patient Medical Reports: Lab results and reports for a patient.
+       * @path /patients/{patientId}/medicalReports/{medicalReportId}
+       * @allow (all) Only the patient can CRUD their own medical reports.
+       * @deny (all) Another user cannot access a patient's medical reports.
+       * @principle Enforces strict data ownership. Access for other roles (e.g., doctors)
+       *            is not possible without a denormalized ID field (e.g., 'orderingDoctorId')
+       *            on this document.
+       */
+      match /medicalReports/{medicalReportId} {
+        allow get: if isOwner(patientId);
+        allow list: if isOwner(patientId);
+        allow create: if isOwner(patientId) && createdWithCorrectPatientId(patientId);
+        allow update: if isOwner(patientId) && isExistingDoc() && isPatientIdImmutable();
+        allow delete: if isOwner(patientId) && isExistingDoc();
+      }
+    }
+
+    /**
+     * @description Doctor Profile: Stores a doctor's professional information.
+     * @path /doctors/{doctorId}
+     * @allow (create) A new user can create their own doctor profile.
+     * @deny (create) A user cannot create a profile for another user.
+     * @allow (read, update, delete) An authenticated user can manage their own profile.
+     * @deny (read, update, delete) A user cannot access another doctor's profile.
+     * @deny (list) Listing all doctors is forbidden to protect privacy.
+     * @principle Restricts access to a user's own data tree (Self-Creation & Ownership).
+     */
+    match /doctors/{doctorId} {
+      allow get: if isOwner(doctorId);
+      allow list: if false;
+      allow create: if isCreatingOwnProfile(doctorId);
+      allow update: if isOwner(doctorId) && isExistingDoc() && isIdImmutable();
+      allow delete: if isOwner(doctorId) && isExistingDoc();
+    }
+  }
+}
