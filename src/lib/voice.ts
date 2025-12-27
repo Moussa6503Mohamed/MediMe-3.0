@@ -2,7 +2,7 @@
 "use client";
 
 import type { Toast } from "@/hooks/use-toast";
-import { AppStore } from "@/store/app-store";
+import { useAppStore, AppStore } from "@/store/app-store";
 
 let voiceRecognition: SpeechRecognition | null = null;
 let toast: ({ ...props }: Toast) => any;
