@@ -2,7 +2,6 @@
 
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
-import { dailySchedule, doctors } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
@@ -12,8 +11,6 @@ import {
   Pill,
   Stethoscope,
   TestTube,
-  Square,
-  Check,
   MapPin,
   UserCheck,
   ClipboardList,
@@ -25,50 +22,56 @@ import { Header } from "./header";
 import { DetailField } from "./detail-field";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { Appointment } from "@/lib/types";
+import { format, parseISO } from "date-fns";
 
 export default function ScheduleDetailView() {
   const { activeScheduleItemId, setActiveScheduleItemStatus } = useAppStore();
   const { t } = useI18n();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const firestore = useFirestore();
 
-  const item = dailySchedule.find((i) => i.id === activeScheduleItemId);
+  const appointmentDocRef = useMemoFirebase(() => {
+    if (!currentUser || !activeScheduleItemId) return null;
+    return doc(firestore, 'patients', currentUser.uid, 'appointments', activeScheduleItemId);
+  }, [firestore, currentUser, activeScheduleItemId]);
+
+  const { data: item, isLoading } = useDoc<Appointment>(appointmentDocRef);
+
+  if (isLoading) {
+    return <div>Loading details...</div>
+  }
 
   if (!item) {
     return <div>{t("scheduleItemNotFound")}</div>;
   }
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "Medication": return <Pill />;
-      case "Appointment": return <Stethoscope />;
-      case "Test": return <TestTube />;
-      default: return <Pill />;
-    }
-  };
   
-  const getDoctor = (doctorName: string) => doctors.find(d => d.name === doctorName);
+  const isCompleted = item.status === 'completed';
+  const itemDateTime = parseISO(item.appointmentDateTime);
 
   const detailFields = [
-    { label: t("time"), value: item.time, icon: <Clock /> },
-    { label: t("type"), value: t(item.type.toLowerCase() as any), icon: getIcon(item.type) },
-    item.location && { label: t("location"), value: item.location, icon: <MapPin /> },
-    item.doctor && { label: t("doctor"), value: t(item.doctor.replace(/\s/g, "") as any), icon: <UserCheck /> },
-    item.appointmentType && { label: t("appointmentType"), value: item.appointmentType, icon: <ClipboardList /> },
-    item.facility && { label: t("facility"), value: t(item.facility.replace(/\s/g, "") as any), icon: <Hospital /> },
-    item.department && { label: t("department"), value: t(item.department.replace(/\s/g, "") as any), icon: <LayoutGrid /> },
+    { label: t("time"), value: format(itemDateTime, 'h:mm a'), icon: <Clock /> },
+    { label: t("type"), value: t('appointment'), icon: <Stethoscope /> },
+    item.notes && { label: t("location"), value: item.notes, icon: <MapPin /> },
+    item.doctorName && { label: t("doctor"), value: item.doctorName, icon: <UserCheck /> },
+    item.specialty && { label: t("appointmentType"), value: item.specialty, icon: <ClipboardList /> },
   ].filter(Boolean);
 
   const handleToggle = () => {
-    setActiveScheduleItemStatus(item.id, !item.isCompleted);
+    // In a real app, update Firestore
     toast({
-        title: `Marked as ${!item.isCompleted ? 'complete' : 'pending'}`,
-        description: item.title,
+        title: `Marked as ${!isCompleted ? 'complete' : 'pending'}`,
+        description: item.reasonForVisit,
     })
   }
 
   const handleDirections = () => {
-    if(item.location) {
-        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.location)}`;
+    if(item.notes) {
+        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(item.notes)}`;
         window.open(url, '_blank');
     } else {
         toast({ title: "No location available."})
@@ -82,22 +85,22 @@ export default function ScheduleDetailView() {
   return (
     <div>
       <Header
-        title={item.title}
-        icon={getIcon(item.type)}
+        title={item.reasonForVisit}
+        icon={<Stethoscope />}
         backPage="calendar-view"
       />
-      <div className={cn("p-5 mb-6 rounded-2xl shadow-lg border", item.isCompleted ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300')}>
+      <div className={cn("p-5 mb-6 rounded-2xl shadow-lg border", isCompleted ? 'bg-green-100 border-green-300' : 'bg-yellow-100 border-yellow-300')}>
         <div className="flex items-center justify-between">
-            <h2 className={cn("text-xl font-bold flex items-center", item.isCompleted ? 'text-green-800' : 'text-yellow-800')}>
-                {item.isCompleted ? <CheckCircle className="w-6 h-6 mr-2" /> : <Clock className="w-6 h-6 mr-2" />}
-                {t('statusLabel')}: {t(item.isCompleted ? 'completed' : 'pending')}
+            <h2 className={cn("text-xl font-bold flex items-center", isCompleted ? 'text-green-800' : 'text-yellow-800')}>
+                {isCompleted ? <CheckCircle className="w-6 h-6 mr-2" /> : <Clock className="w-6 h-6 mr-2" />}
+                {t('statusLabel')}: {t(isCompleted ? 'completed' : 'pending')}
             </h2>
-            <Button size="sm" onClick={handleToggle} variant={item.isCompleted ? "default" : "secondary"} className={cn(item.isCompleted ? "bg-green-600" : "bg-yellow-600")}>
-                {item.isCompleted ? t("markNotDone") : t("markDone")}
+            <Button size="sm" onClick={handleToggle} variant={isCompleted ? "default" : "secondary"} className={cn(isCompleted ? "bg-green-600" : "bg-yellow-600")}>
+                {isCompleted ? t("markNotDone") : t("markDone")}
             </Button>
         </div>
-        <p className={cn("text-sm mt-2", item.isCompleted ? "text-green-700" : "text-yellow-700")}>
-            {item.isCompleted ? t('completedMessage') : t('pendingMessage')}
+        <p className={cn("text-sm mt-2", isCompleted ? "text-green-700" : "text-yellow-700")}>
+            {isCompleted ? t('completedMessage') : t('pendingMessage')}
         </p>
       </div>
 
@@ -108,13 +111,13 @@ export default function ScheduleDetailView() {
         {detailFields.map((field, i) => field && <DetailField key={i} label={field.label} value={field.value} icon={field.icon} />)}
       </div>
 
-      {(item.notes || item.instructions) && (
+      {item.notes && (
         <>
             <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center">
-                <Notebook className="w-6 h-6 mr-2 text-purple-600" /> {item.type === 'Test' ? t('instructions') : t('notes')}
+                <Notebook className="w-6 h-6 mr-2 text-purple-600" /> {t('notes')}
             </h3>
             <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 mb-8">
-                <p className="text-gray-700">{item.notes || item.instructions}</p>
+                <p className="text-gray-700">{item.notes}</p>
             </div>
         </>
       )}

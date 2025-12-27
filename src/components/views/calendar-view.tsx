@@ -1,8 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/store/app-store";
-import { dailySchedule } from "@/lib/data";
-import { format, setDate, getDate, getDaysInMonth } from "date-fns";
+import { format, setDate, getDate, getDaysInMonth, parseISO } from "date-fns";
 import { enUS, arSA } from "date-fns/locale";
 import { useI18n } from "@/hooks/use-i18n";
 import { cn } from "@/lib/utils";
@@ -17,21 +16,39 @@ import {
   Square,
 } from "lucide-react";
 import { Header } from "./header";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import type { Appointment } from "@/lib/types";
 
 export default function CalendarView() {
   const { navigate, selectedDay, setSelectedDay } = useAppStore();
   const { t, language } = useI18n();
+  const { currentUser } = useAuth();
+  const firestore = useFirestore();
 
   const today = new Date();
   const selectedDateObj = setDate(today, selectedDay);
+  selectedDateObj.setHours(0, 0, 0, 0);
+
+  const startOfDay = selectedDateObj.toISOString();
+  const endOfDay = new Date(selectedDateObj.getTime() + 24 * 60 * 60 * 1000 - 1).toISOString();
+  
+  const appointmentsQuery = useMemoFirebase(() => {
+    if (!currentUser) return null;
+    return query(
+      collection(firestore, 'patients', currentUser.uid, 'appointments'),
+      where('appointmentDateTime', '>=', startOfDay),
+      where('appointmentDateTime', '<=', endOfDay)
+    );
+  }, [firestore, currentUser, startOfDay, endOfDay]);
+
+  const { data: scheduleForDay, isLoading } = useCollection<Appointment>(appointmentsQuery);
+
   const locale = language === "ar" ? arSA : enUS;
 
   const daysInMonth = getDaysInMonth(today);
   const calendarDays = Array.from({ length: daysInMonth }, (_, i) => i + 1);
-
-  const scheduleForDay = dailySchedule.filter(
-    (item) => getDate(new Date(item.date)) === selectedDay
-  );
 
   return (
     <div className="pb-safe-footer">
@@ -92,10 +109,11 @@ export default function CalendarView() {
       </div>
 
       <div className="mt-4 space-y-4">
-        {scheduleForDay.length > 0 ? (
+        {isLoading && <p>Loading schedule...</p>}
+        {!isLoading && scheduleForDay && scheduleForDay.length > 0 ? (
           scheduleForDay.map((item) => <ScheduleItem key={item.id} item={item} />)
         ) : (
-          <p className="text-muted-foreground italic p-4 bg-gray-50 rounded-xl">
+          !isLoading && <p className="text-muted-foreground italic p-4 bg-gray-50 rounded-xl">
             {t("noActivities")}
           </p>
         )}
@@ -104,64 +122,53 @@ export default function CalendarView() {
   );
 }
 
-const ScheduleItem = ({ item }: { item: (typeof dailySchedule)[0] }) => {
+const ScheduleItem = ({ item }: { item: Appointment }) => {
   const { navigate } = useAppStore();
-  const { t } = useI18n();
-
-  const getIcon = (type: string) => {
-    switch (type) {
-      case "Medication":
-        return <Pill className="w-5 h-5" />;
-      case "Appointment":
-        return <Stethoscope className="w-5 h-5" />;
-      case "Test":
-        return <TestTube className="w-5 h-5" />;
-      default:
-        return <Pill className="w-5 h-5" />;
-    }
-  };
+  
+  const isCompleted = item.status === 'completed';
+  const itemDateTime = parseISO(item.appointmentDateTime);
 
   const handleToggleComplete = (e: React.MouseEvent) => {
     e.stopPropagation();
-    // In a real app, this would update the state
+    // In a real app, this would update the state in Firestore
     console.log("Toggling completion for", item.id);
   };
 
   return (
     <div className="flex items-start space-x-4">
       <div className="flex flex-col items-center mt-1">
-        <p className="text-sm font-bold text-gray-700">{item.time}</p>
+        <p className="text-sm font-bold text-gray-700">{format(itemDateTime, 'h:mm a')}</p>
       </div>
       <div
         className={cn(
           "flex-1 p-4 rounded-xl shadow-md border cursor-pointer",
-          item.isCompleted
+          isCompleted
             ? "bg-green-100 border-green-300"
             : "bg-white border-gray-100 hover:bg-gray-50"
         )}
         onClick={() => {
-          navigate("schedule-detail-view", { scheduleItemId: item.id });
+          navigate("schedule-detail-view", { activeScheduleItemId: item.id });
         }}
       >
         <div className="flex justify-between items-start">
           <div className="flex items-center space-x-2">
-            <div className={cn("p-1 rounded-full", item.color)}>
-              {getIcon(item.type)}
+            <div className={cn("p-1 rounded-full", isCompleted ? "bg-green-200" : "bg-blue-200")}>
+              <Stethoscope className="w-5 h-5" />
             </div>
-            <p className={cn("text-sm font-semibold", item.textColor)}>
-              {t(item.type.toLowerCase() as any)}
+            <p className={cn("text-sm font-semibold", isCompleted ? "text-green-800" : "text-blue-800")}>
+              Appointment
             </p>
           </div>
           <button
             onClick={handleToggleComplete}
             className={cn(
               "p-1 rounded-full transition-colors",
-              item.isCompleted
+              isCompleted
                 ? "bg-green-600 text-white"
                 : "bg-gray-200 hover:bg-gray-300 text-gray-600"
             )}
           >
-            {item.isCompleted ? (
+            {isCompleted ? (
               <Check className="w-4 h-4" />
             ) : (
               <Square className="w-4 h-4" />
@@ -171,18 +178,18 @@ const ScheduleItem = ({ item }: { item: (typeof dailySchedule)[0] }) => {
         <h3
           className={cn(
             "text-xl font-bold mt-2",
-            item.isCompleted ? "text-green-800 line-through" : "text-gray-800"
+            isCompleted ? "text-green-800 line-through" : "text-gray-800"
           )}
         >
-          {item.title}
+          {item.reasonForVisit}
         </h3>
         <p
           className={cn(
             "text-sm text-gray-500",
-            item.isCompleted ? "line-through" : ""
+            isCompleted ? "line-through" : ""
           )}
         >
-          {item.detail}
+          with {item.doctorName || 'a doctor'}
         </p>
       </div>
     </div>

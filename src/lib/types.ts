@@ -2,11 +2,14 @@ import { type User } from "firebase/auth";
 
 export type Appointment = {
     id: string;
-    doctor: string;
-    specialty: string;
-    date: Date;
-    time: string;
-    location: string;
+    patientId: string;
+    doctorId: string;
+    appointmentDateTime: string; // ISO string
+    reasonForVisit: string;
+    notes?: string;
+    status: 'scheduled' | 'confirmed' | 'completed' | 'cancelled';
+    doctorName?: string;
+    specialty?: string;
   };
   
   export type Medication = {
@@ -93,16 +96,7 @@ export type Appointment = {
     color: string;
     bg: string;
   };
-  
-  export type ActionButton = {
-    id: string;
-    labelKey: string;
-    icon: React.ReactNode;
-    color: string;
-    descriptionKey: string;
-    nav: string;
-  };
-  
+    
   export type Insurance = {
     provider: string;
     memberId: string;
@@ -114,7 +108,7 @@ export type Appointment = {
     title: string;
     doctor: string;
     location: string;
-    symptoms: string;
+symptoms: string;
     diagnosis: string;
     medications: string[];
     attachments: {
@@ -135,4 +129,14 @@ export type Appointment = {
   };
 
   export type CurrentUser = User;
+
+  export type Patient = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    dateOfBirth: string;
+    gender: string;
+    contactNumber: string;
+    email: string;
+  };
     
