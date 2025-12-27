@@ -51,6 +51,25 @@
         "insurancePolicyNumber": {
           "type": "string",
           "description": "The patient's insurance policy number."
+        },
+        "allergies": {
+          "type": "array",
+          "description": "A list of known allergies for the patient.",
+          "items": {
+            "type": "string"
+          }
+        },
+        "primaryDoctor": {
+          "type": "string",
+          "description": "Name of the patient's primary care physician."
+        },
+        "emergencyContactName": {
+          "type": "string",
+          "description": "The name of the emergency contact."
+        },
+        "emergencyContactPhone": {
+          "type": "string",
+          "description": "The phone number of the emergency contact."
         }
       },
       "required": [
@@ -398,4 +417,3 @@
     "reasoning": "The Firestore data structure is designed to ensure security, scalability, and debuggability, following the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The design prioritizes path-based ownership for user-specific data and uses membership maps for collaborative data access, ensuring clear authorization and efficient data retrieval. The structure is segregated based on security needs and data types. All documents in a collection share the same security requirements to avoid complex rules. All data related to patients and doctors are stored under their respective user IDs to maintain data ownership and privacy. Authorization Independence is achieved through path-based ownership, avoiding the need for `get()` calls in security rules. This ensures atomic operations and easier debugging. The segregation of data based on security requirements (e.g., private data under `/users/{userId}`) supports secure `list` operations (QAPs). The use of explicit state modeling with dedicated status fields enhances data clarity and predictability."
   }
 }
-    

@@ -25,6 +25,8 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
+  AlertTriangle,
+  Stethoscope,
 } from 'lucide-react';
 import { useI18n } from '@/hooks/use-i18n';
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
@@ -149,9 +151,16 @@ const Step3 = ({ data, onChange }: { data: any, onChange: (field: string, value:
                 <Input type="number" min="0" placeholder="70" value={data.weight || ''} onChange={e => onChange('weight', e.target.value)} />
             </div>
         </div>
-        <div>
+        <div className="md:col-span-2">
             <Label>Previous Operations <span className="text-gray-400">(optional)</span></Label>
             <Input type="text" placeholder="List any surgeries" value={data.previousOperations || ''} onChange={e => onChange('previousOperations', e.target.value)} />
+        </div>
+        <div>
+            <h3 className="text-lg font-bold text-gray-800 flex items-center mt-6">
+                <AlertTriangle className="w-5 h-5 mr-2 text-red-600" /> Known Allergies
+            </h3>
+            <p className="text-sm text-gray-500 mb-2">Please list any known allergies, separated by commas.</p>
+            <Input type="text" placeholder="e.g., Penicillin, Peanuts, Shellfish" value={data.allergies || ''} onChange={e => onChange('allergies', e.target.value)} />
         </div>
     </div>
 );
@@ -164,15 +173,20 @@ const Step4 = ({ data, onChange }: { data: any, onChange: (field: string, value:
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
                 <Label>Contact Name</Label>
-                <Input type="text" placeholder="Full name" value={data.emergencyContact || ''} onChange={e => onChange('emergencyContact', e.target.value)} />
+                <Input type="text" placeholder="Full name" value={data.emergencyContactName || ''} onChange={e => onChange('emergencyContactName', e.target.value)} />
             </div>
             <div>
                 <Label>Contact Phone</Label>
-                <Input type="tel" placeholder="+1 (555) 000-0000" value={data.emergencyPhone || ''} onChange={e => onChange('emergencyPhone', e.target.value)} />
+                <Input type="tel" placeholder="+1 (555) 000-0000" value={data.emergencyContactPhone || ''} onChange={e => onChange('emergencyContactPhone', e.target.value)} />
             </div>
         </div>
-
+        
         <h3 className="text-lg font-bold text-gray-800 flex items-center">
+            <Stethoscope className="w-5 h-5 mr-2 text-teal-600" /> Primary Doctor <span className="text-gray-400 text-sm font-normal ml-2">(optional)</span>
+        </h3>
+        <Input type="text" placeholder="Dr. John Smith" value={data.primaryDoctor || ''} onChange={e => onChange('primaryDoctor', e.target.value)} />
+
+        <h3 className="text-lg font-bold text-gray-800 flex items-center mt-6">
             <Shield className="w-5 h-5 mr-2 text-blue-600" /> Insurance Information <span className="text-gray-400 text-sm font-normal ml-2">(optional)</span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -205,8 +219,10 @@ export default function CreateAccountView() {
     height: '',
     weight: '',
     previousOperations: '',
-    emergencyContact: '',
-    emergencyPhone: '',
+    allergies: '',
+    primaryDoctor: '',
+    emergencyContactName: '',
+    emergencyContactPhone: '',
     insuranceProvider: '',
     insuranceMemberId: ''
   });
@@ -248,8 +264,10 @@ export default function CreateAccountView() {
         height: formData.height,
         weight: formData.weight,
         previousOperations: formData.previousOperations,
-        emergencyContact: formData.emergencyContact,
-        emergencyPhone: formData.emergencyPhone,
+        allergies: formData.allergies.split(',').map(s => s.trim()).filter(Boolean),
+        primaryDoctor: formData.primaryDoctor,
+        emergencyContactName: formData.emergencyContactName,
+        emergencyContactPhone: formData.emergencyContactPhone,
         insuranceProvider: formData.insuranceProvider,
         insuranceMemberId: formData.insuranceMemberId,
       };

@@ -29,14 +29,6 @@ export default function MemberSummaryView() {
 
   const isSelf = viewingMemberId === currentUser?.uid;
 
-  // Determine the correct patient ID to use for fetching data
-  const patientIdForDocs = useMemoFirebase(() => {
-    if (isSelf) return currentUser?.uid;
-    // If not self, we need to get the patientId from the familyMember document
-    // This requires an additional query, which we will handle below.
-    return null;
-  }, [isSelf, currentUser]);
-  
   const familyMemberDocRef = useMemoFirebase(() => {
     if (isSelf || !currentUser || !viewingMemberId) return null;
     return doc(firestore, 'patients', currentUser.uid, 'familyMembers', viewingMemberId);
@@ -44,7 +36,7 @@ export default function MemberSummaryView() {
 
   const { data: familyMember, isLoading: isLoadingFamilyMember } = useDoc<FamilyMember>(familyMemberDocRef);
   
-  const finalPatientId = patientIdForDocs || familyMember?.patientId;
+  const finalPatientId = isSelf ? currentUser?.uid : familyMember?.patientId;
 
   const patientDocRef = useMemoFirebase(() => {
     if (!finalPatientId) return null;
@@ -81,14 +73,7 @@ export default function MemberSummaryView() {
   if (!member) {
     return <div>{t("noRecordsFound")}</div>;
   }
-
-  // MOCK DATA FOR NOW - To be replaced with Firestore data
-  const memberAllergies = ["Penicillin", "Peanuts", "Shellfish"];
-  const emergencyContact = {
-    name: "Sarah Johnson",
-    relationship: "Spouse",
-    phone: "+1 (555) 123-4567",
-  };
+  
   const displayName = `${member.firstName} ${member.lastName}`;
   
   return (
@@ -111,9 +96,9 @@ export default function MemberSummaryView() {
       </div>
 
       <div className="grid grid-cols-2 gap-3 mb-6">
-        <DetailField label={t("dateOfBirth")} value={member.dateOfBirth} icon={<Cake />} />
-        <DetailField label={t("bloodType")} value={"O+"} icon={<Droplets className="text-red-500"/>} />
-        <DetailField label={t("primaryDoctor")} value={"Dr. Amr Mostafa"} icon={<UserCheck />} />
+        <DetailField label={t("dateOfBirth")} value={member.dateOfBirth || "Not set"} icon={<Cake />} />
+        <DetailField label={t("bloodType")} value={member.bloodType || "Not set"} icon={<Droplets className="text-red-500"/>} />
+        {member.primaryDoctor && <DetailField label={t("primaryDoctor")} value={member.primaryDoctor} icon={<UserCheck />} />}
       </div>
 
       <div className="mb-6">
@@ -121,12 +106,12 @@ export default function MemberSummaryView() {
           <AlertTriangle className="w-5 h-5 mr-2 text-red-600" /> Known Allergies
         </h3>
         <div className="grid grid-cols-2 gap-2">
-            {memberAllergies.map(allergy => (
+            {(member.allergies && member.allergies.length > 0) ? member.allergies.map(allergy => (
                  <div key={allergy} className="flex items-center space-x-2 p-3 bg-red-50 rounded-lg border border-red-200">
                     <AlertTriangle className="w-4 h-4 text-red-600" />
                     <span className="text-sm font-semibold text-red-800">{allergy}</span>
                 </div>
-            ))}
+            )) : <p className="text-gray-500 italic p-4 bg-gray-50 rounded-xl col-span-2">No known allergies listed.</p>}
         </div>
       </div>
 
@@ -189,25 +174,27 @@ export default function MemberSummaryView() {
         </div>
       </div>
 
-      <div className="mb-6">
-        <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
-            <Phone className="w-5 h-5 mr-2 text-orange-600" /> {t('emergencyContact')}
-        </h3>
-        <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
-            <div className="flex items-center justify-between">
-                <div>
-                    <p className="text-base font-bold text-gray-800">{emergencyContact.name}</p>
-                    <p className="text-sm text-gray-600">{emergencyContact.relationship}</p>
-                    <p className="text-sm font-semibold text-primary mt-1">{emergencyContact.phone}</p>
-                </div>
-                <a href={`tel:${emergencyContact.phone}`} className="p-3 bg-green-600 rounded-full hover:bg-green-700 transition">
-                    <Phone className="w-5 h-5 text-white"/>
-                </a>
-            </div>
+      {(member.emergencyContactName || member.emergencyContactPhone) && (
+        <div className="mb-6">
+          <h3 className="text-lg font-bold text-gray-800 mb-3 flex items-center">
+              <Phone className="w-5 h-5 mr-2 text-orange-600" /> {t('emergencyContact')}
+          </h3>
+          <div className="p-4 bg-white rounded-xl border border-gray-200 shadow-sm">
+              <div className="flex items-center justify-between">
+                  <div>
+                      {member.emergencyContactName && <p className="text-base font-bold text-gray-800">{member.emergencyContactName}</p>}
+                      {member.emergencyContactPhone && <p className="text-sm font-semibold text-primary mt-1">{member.emergencyContactPhone}</p>}
+                  </div>
+                  {member.emergencyContactPhone && (
+                    <a href={`tel:${member.emergencyContactPhone}`} className="p-3 bg-green-600 rounded-full hover:bg-green-700 transition">
+                        <Phone className="w-5 h-5 text-white"/>
+                    </a>
+                  )}
+              </div>
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   );
 }
-    

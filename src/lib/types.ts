@@ -111,5 +111,9 @@ export type Appointment = {
     gender: string;
     contactNumber: string;
     email: string;
+    allergies?: string[];
+    primaryDoctor?: string;
+    emergencyContactName?: string;
+    emergencyContactPhone?: string;
   };
     
