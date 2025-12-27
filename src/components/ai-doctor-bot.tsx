@@ -79,7 +79,7 @@ export default function AiDoctorBot() {
       handleSendMessage(lastVoiceCommand);
       setLastVoiceCommand(null); // Clear the command after using it
     }
-  }, [lastVoiceCommand, setLastVoiceCommand]);
+  }, [lastVoiceCommand]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
