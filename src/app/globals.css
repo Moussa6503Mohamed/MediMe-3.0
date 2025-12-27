@@ -1,10 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=Cairo:wght@200..900&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 0 0% 96.1%;
+    --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
     --card: 0 0% 100%;
     --card-foreground: 222.2 84% 4.9%;
@@ -12,32 +14,29 @@
     --popover-foreground: 222.2 84% 4.9%;
     --primary: 200 48% 40%;
     --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 94%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 94%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 195 53% 90%;
-    --accent-foreground: 200 48% 30%;
+    --secondary: 210 40% 96.1%;
+    --secondary-foreground: 222.2 47.4% 11.2%;
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+    --accent: 210 40% 98%;
+    --accent-foreground: 222.2 47.4% 11.2%;
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 92%;
-    --ring: 200 48% 40%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 240 5.3% 26.1%;
-    --sidebar-primary: 200 48% 40%;
-    --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 195 53% 94%;
-    --sidebar-accent-foreground: 200 48% 30%;
-    --sidebar-border: 220 13% 91%;
-    --sidebar-ring: 200 48% 40%;
+    --border: 214.3 31.8% 91.4%;
+    --input: 214.3 31.8% 91.4%;
+    --ring: 222.2 84% 4.9%;
+    --radius: 0.75rem;
+
+    /* Custom colors from prototype */
+    --brand-cyan: 180 82% 35%;
+    --brand-teal: 173 80% 30%;
+    --brand-purple: 262 82% 57%;
+    --brand-indigo: 240 70% 60%;
+    --brand-orange: 25 95% 53%;
+    --brand-pink: 326 91% 60%;
+    --brand-rose: 340 82% 62%;
   }
+
   .dark {
     --background: 222.2 84% 4.9%;
     --foreground: 210 40% 98%;
@@ -45,8 +44,8 @@
     --card-foreground: 210 40% 98%;
     --popover: 222.2 84% 4.9%;
     --popover-foreground: 210 40% 98%;
-    --primary: 195 53% 79%;
-    --primary-foreground: 200 48% 20%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
     --secondary: 217.2 32.6% 17.5%;
     --secondary-foreground: 210 40% 98%;
     --muted: 217.2 32.6% 17.5%;
@@ -57,20 +56,7 @@
     --destructive-foreground: 210 40% 98%;
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
-    --ring: 195 53% 79%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 195 53% 79%;
-    --sidebar-primary-foreground: 200 48% 20%;
-    --sidebar-accent: 217.2 32.6% 17.5%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 195 53% 79%;
+    --ring: 210 40% 98%;
   }
 }
 
@@ -80,5 +66,62 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  html, body, #__next {
+    height: 100%;
+  }
+
+  .pb-safe-footer {
+    padding-bottom: 96px;
+  }
+
+  [dir="rtl"] {
+      direction: rtl;
+      font-family: var(--font-cairo), sans-serif;
+  }
+  [dir="rtl"] header.flex,
+  [dir="rtl"] button.flex,
+  [dir="rtl"] a.flex,
+  [dir="rtl"] .flex.items-center.space-x-2,
+  [dir="rtl"] .flex.items-center.space-x-3,
+  [dir="rtl"] .flex.items-center.space-x-4 {
+      flex-direction: row-reverse;
+  }
+  [dir="rtl"] .justify-between,
+  [dir="rtl"] .justify-around {
+      flex-direction: row !important;
+  }
+  [dir="rtl"] nav.justify-around > :not([hidden]) ~ :not([hidden]) {
+      --tw-space-x-reverse: 0 !important;
+      margin-left: 0 !important;
+      margin-right: 0 !important;
+  }
+  [dir="rtl"] .overflow-x-auto {
+      direction: ltr;
+  }
+  [dir="rtl"] .overflow-x-auto > * {
+      direction: rtl;
+  }
+  [dir="rtl"] .space-x-1 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-3 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]),
+  [dir="rtl"] .space-x-6 > :not([hidden]) ~ :not([hidden]) {
+      --tw-space-x-reverse: 1;
+  }
+  [dir="rtl"] .mr-1 { margin-right: 0; margin-left: 0.25rem; }
+  [dir="rtl"] .mr-2 { margin-right: 0; margin-left: 0.5rem; }
+  [dir="rtl"] .mr-3 { margin-right: 0; margin-left: 0.75rem; }
+  [dir="rtl"] .ml-1 { margin-left: 0; margin-right: 0.25rem; }
+  [dir="rtl"] .ml-2 { margin-left: 0; margin-right: 0.5rem; }
+  [dir="rtl"] .ml-3 { margin-left: 0; margin-right: 0.75rem; }
+  [dir="rtl"] .ml-4 { margin-left: 0; margin-right: 1rem; }
+  [dir="rtl"] .pl-4 { padding-left: 0; padding-right: 1rem; }
+  [dir="rtl"] .pr-4 { padding-right: 0; padding-left: 1rem; }
+  [dir="rtl"] .text-left { text-align: right; }
+  [dir="rtl"] .text-right { text-align: left; }
+  [dir="rtl"] [data-lucide="ChevronRight"],
+  [dir="rtl"] [data-lucide="ArrowRight"] {
+      transform: scaleX(-1);
   }
 }

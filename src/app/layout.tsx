@@ -1,13 +1,14 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Cairo } from "next/font/google";
 import "./globals.css";
-import { Toaster } from "@/components/ui/toaster";
+import AppProvider from "@/store/app-provider";
 
-const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
+const cairo = Cairo({ subsets: ["arabic"], variable: "--font-cairo" });
 
 export const metadata: Metadata = {
   title: "MediMe Healthcare Platform",
-  description: "A robust backend system for a medical appointment and patient management platform.",
+  description: "Your Personal Health Companion",
 };
 
 export default function RootLayout({
@@ -16,15 +17,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className={`${inter.className} font-body antialiased`}>
-        {children}
-        <Toaster />
+    <html lang="en">
+      <body className={`${inter.variable} ${cairo.variable} font-inter`}>
+        <AppProvider>{children}</AppProvider>
       </body>
     </html>
   );
