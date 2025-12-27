@@ -28,25 +28,37 @@ import RefillConfirmationView from "@/components/views/refill-confirmation-view"
 import AddMemberForm from "@/components/views/add-member-form";
 import AddScheduleFormView from "@/components/views/add-schedule-form-view";
 import { Toaster } from "@/components/ui/toaster";
-import { useAppStore } from "@/store/app-store";
-import { useEffect } from "react";
+import { AppStoreContext, useAppStore } from "@/store/app-store";
+import { useContext, useEffect } from "react";
 import ProfileView from "@/components/views/profile-view";
 import { useI18n } from "@/hooks/use-i18n";
 import { initVoiceAssistant } from "@/lib/voice";
 import { useToast } from "@/hooks/use-toast";
 import InvitationDetailView from "@/components/views/invitation-detail-view";
+import { useStore } from "zustand";
 
 export default function Home() {
   const { isLoggedIn } = useAuth();
-  const { currentPage, language, navigate, setLastVoiceCommand } = useAppStore();
+  const store = useContext(AppStoreContext);
+  if (!store) {
+    throw new Error("useAppStore must be used within an AppStoreProvider.");
+  }
+  const { currentPage, language, navigate, setLastVoiceCommand } = useStore(store);
   const { t, setLanguage } = useI18n();
   const { toast } = useToast();
 
   useEffect(() => {
     document.documentElement.lang = language;
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr";
-    initVoiceAssistant(language, t, toast, navigate, setLastVoiceCommand);
-  }, [language, setLanguage, t, toast, navigate, setLastVoiceCommand]);
+    initVoiceAssistant(
+        language, 
+        t, 
+        toast, 
+        navigate, 
+        setLastVoiceCommand, 
+        store.getState
+    );
+  }, [language, setLanguage, t, toast, navigate, setLastVoiceCommand, store]);
 
   const renderContent = () => {
     if (!isLoggedIn) {

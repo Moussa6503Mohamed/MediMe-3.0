@@ -2,23 +2,27 @@
 "use client";
 
 import type { Toast } from "@/hooks/use-toast";
-import { useAppStore, AppStore } from "@/store/app-store";
+import { AppStore, useAppStore } from "@/store/app-store";
 
 let voiceRecognition: SpeechRecognition | null = null;
 let toast: ({ ...props }: Toast) => any;
 let navigate: AppStore["navigate"];
 let setLastVoiceCommand: AppStore["setLastVoiceCommand"];
+let getStoreState: () => AppStore;
+
 
 export const initVoiceAssistant = (
   language: "en" | "ar",
   t: (key: string, params?: Record<string, string | number>) => string,
   toastFn: typeof toast,
   navigateFn: typeof navigate,
-  setLastVoiceCommandFn: typeof setLastVoiceCommand
+  setLastVoiceCommandFn: typeof setLastVoiceCommand,
+  getStoreStateFn: () => AppStore
 ) => {
   toast = toastFn;
   navigate = navigateFn;
   setLastVoiceCommand = setLastVoiceCommandFn;
+  getStoreState = getStoreStateFn;
 
   if (typeof window !== "undefined") {
     const SpeechRecognition =
@@ -54,12 +58,12 @@ export const initVoiceAssistant = (
           });
         }
         // Ensure the assistant stops on error
-        useAppStore.getState().stopVoiceAssistant();
+        getStoreState().stopVoiceAssistant();
       };
 
       voiceRecognition.onend = () => {
         // Stop the assistant UI when recognition ends
-        useAppStore.getState().stopVoiceAssistant();
+        getStoreState().stopVoiceAssistant();
       };
     }
   }
@@ -92,7 +96,7 @@ const handleVoiceCommand = (
   t: (key: string, params?: Record<string, string | number>) => string
 ) => {
   const lowerCommand = command.toLowerCase();
-  const { currentPage } = useAppStore.getState();
+  const { currentPage } = getStoreState();
 
   // Command for DoctorBot
   if (currentPage === 'doctor-bot') {
