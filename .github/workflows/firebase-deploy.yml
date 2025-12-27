@@ -10,11 +10,6 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Dependencies and Build
-        # If you are NOT using a framework like React/Vite, 
-        # you can put a '#' in front of the next line to skip it.
-        # run: npm ci && npm run build
-
       - name: Deploy to Firebase
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
