@@ -25,10 +25,11 @@ import {
   ChevronRight,
   ChevronLeft,
   Key,
+  Shield,
 } from "lucide-react";
 import { useI18n } from "@/hooks/use-i18n";
 import { getAuth, createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { getFirestore, doc, setDoc } from "firebase/firestore";
+import { getFirestore, doc, setDoc }from "firebase/firestore";
 import { useFirestore } from "@/firebase";
 
 export default function CreateAccountView() {
