@@ -116,4 +116,56 @@ export type Appointment = {
     emergencyContactName?: string;
     emergencyContactPhone?: string;
   };
+
+  export type Admin = {
+    id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    role: 'superadmin' | 'admin' | 'moderator';
+    permissions: AdminPermission[];
+    active: boolean;
+    lastLogin?: string;
+    createdAt: string;
+    updatedAt: string;
+    createdBy?: string;
+  };
+
+  export type AdminPermission = 
+    | 'manage_users'
+    | 'manage_doctors'
+    | 'manage_patients'
+    | 'manage_appointments'
+    | 'view_analytics'
+    | 'manage_admins'
+    | 'system_settings';
+
+  export type SystemSettings = {
+    maintenanceMode: boolean;
+    allowNewRegistrations: boolean;
+    adminEmailDomain: string;
+    maxAppointmentsPerDay: number;
+    notificationSettings: {
+      emailEnabled: boolean;
+      smsEnabled: boolean;
+      pushEnabled: boolean;
+      appointmentReminders: boolean;
+      medicationReminders: boolean;
+    };
+    updatedAt: string;
+    updatedBy: string;
+    version: string;
+  };
+
+  export type AuditLog = {
+    id: string;
+    adminId: string;
+    adminEmail: string;
+    action: string;
+    resourceType: string;
+    resourceId?: string;
+    details?: Record<string, any>;
+    ipAddress?: string;
+    timestamp: string;
+  };
     

@@ -75,6 +75,31 @@ service cloud.firestore {
     }
 
     /**
+     * @description Checks if the authenticated user is an admin.
+     * Admins have a custom claim 'admin' set to true.
+     */
+    function isAdmin() {
+      return isSignedIn() && request.auth.token.admin == true;
+    }
+
+    /**
+     * @description Checks if the authenticated user is a superadmin.
+     * Superadmins have a custom claim 'role' set to 'superadmin'.
+     */
+    function isSuperAdmin() {
+      return isAdmin() && request.auth.token.role == 'superadmin';
+    }
+
+    /**
+     * @description Checks if the authenticated user has a specific permission.
+     * @param permission The permission to check for.
+     */
+    function hasPermission(permission) {
+      return isAdmin() && request.auth.token.permissions != null 
+        && permission in request.auth.token.permissions;
+    }
+
+    /**
      * @description On create, validates that the document's internal `id` field
      * matches the user's auth UID, establishing a secure ownership link.
      * @param userId The document ID from the path, which must match the user's UID.
@@ -126,31 +151,33 @@ service cloud.firestore {
      * @allow (create) A new user can create their own patient profile.
      * @deny (create) A user cannot create a profile for another user.
      * @allow (read, update, delete) An authenticated user can manage their own profile.
+     * @allow (read, update) Admins with 'manage_patients' permission can access patient profiles.
      * @deny (read, update, delete) A user cannot access another patient's profile.
-     * @deny (list) Listing all patients is forbidden to protect privacy.
+     * @deny (list) Listing all patients is forbidden to protect privacy (except for admins).
      * @principle Restricts access to a user's own data tree (Self-Creation & Ownership).
      */
     match /patients/{patientId} {
-      allow get: if isOwner(patientId);
-      allow list: if false;
+      allow get: if isOwner(patientId) || hasPermission('manage_patients');
+      allow list: if hasPermission('manage_patients');
       allow create: if isCreatingOwnProfile(patientId);
-      allow update: if isOwner(patientId) && isExistingDoc() && isIdImmutable();
+      allow update: if (isOwner(patientId) || hasPermission('manage_patients')) && isExistingDoc() && isIdImmutable();
       allow delete: if isOwner(patientId) && isExistingDoc();
 
       /**
        * @description Patient Appointments: Medical appointments for a patient.
        * @path /patients/{patientId}/appointments/{appointmentId}
        * @allow (read, update) The patient or the assigned doctor can view/update an appointment.
+       * @allow (read, list, update) Admins with 'manage_appointments' permission can access appointments.
        * @deny (read, update) A user who is not the patient or assigned doctor cannot access it.
        * @allow (create, delete) Only the patient can create or delete their appointments.
        * @allow (list) The patient can list all of their own appointments.
        * @principle Enforces a shared access model between the patient and the doctor.
        */
       match /appointments/{appointmentId} {
-        allow get: if isOwner(patientId) || isDoctorForAppointment();
-        allow list: if isOwner(patientId);
+        allow get: if isOwner(patientId) || isDoctorForAppointment() || hasPermission('manage_appointments');
+        allow list: if isOwner(patientId) || hasPermission('manage_appointments');
         allow create: if isOwner(patientId) && createdWithCorrectPatientId(patientId);
-        allow update: if (isOwner(patientId) || isDoctorForAppointment()) && isPatientIdImmutable() && request.resource.data.doctorId == resource.data.doctorId;
+        allow update: if (isOwner(patientId) || isDoctorForAppointment() || hasPermission('manage_appointments')) && isPatientIdImmutable() && request.resource.data.doctorId == resource.data.doctorId;
         allow delete: if isOwner(patientId) && isExistingDoc();
       }
 
@@ -200,14 +227,59 @@ service cloud.firestore {
      * @allow (read) Any authenticated user can view a doctor's profile.
      * @allow (list) Any authenticated user can list all doctors.
      * @allow (update, delete) An authenticated user can manage their own profile.
+     * @allow (read, list, update) Admins with 'manage_doctors' permission can access doctor profiles.
      * @deny (read, update, delete) A user cannot access another doctor's profile.
      * @principle Publicly readable list, but write access restricted to owner.
      */
     match /doctors/{doctorId} {
       allow get, list: if isSignedIn();
       allow create: if isCreatingOwnProfile(doctorId);
-      allow update: if isOwner(doctorId) && isExistingDoc() && isIdImmutable();
+      allow update: if (isOwner(doctorId) || hasPermission('manage_doctors')) && isExistingDoc() && isIdImmutable();
       allow delete: if isOwner(doctorId) && isExistingDoc();
+    }
+
+    /**
+     * @description Admin Profile: Stores administrator information.
+     * @path /admins/{adminId}
+     * @allow (read, update) An admin can read and update their own profile.
+     * @allow (read, list, create, update, delete) Superadmins or admins with 'manage_admins' can manage admin profiles.
+     * @deny (all) Non-admins cannot access admin profiles.
+     * @principle Admin-only access with role-based permissions.
+     */
+    match /admins/{adminId} {
+      allow get: if isAdmin() && (isOwner(adminId) || hasPermission('manage_admins'));
+      allow list: if hasPermission('manage_admins');
+      allow create: if hasPermission('manage_admins');
+      allow update: if isAdmin() && (isOwner(adminId) || hasPermission('manage_admins')) && isExistingDoc();
+      allow delete: if hasPermission('manage_admins') && isExistingDoc();
+    }
+
+    /**
+     * @description System Settings: Global system configuration.
+     * @path /systemSettings/{document}
+     * @allow (read) All authenticated admins can read system settings.
+     * @allow (update) Only superadmins can update system settings.
+     * @deny (all) Non-admins cannot access system settings.
+     * @principle Superadmin-only write access.
+     */
+    match /systemSettings/{document} {
+      allow get, list: if isAdmin();
+      allow update: if isSuperAdmin();
+      allow create, delete: if false; // System settings should be initialized only
+    }
+
+    /**
+     * @description Audit Logs: Tracks all admin actions.
+     * @path /auditLogs/{logId}
+     * @allow (read, list) All authenticated admins can read audit logs.
+     * @allow (create) Only Cloud Functions can create audit logs (enforced server-side).
+     * @deny (update, delete) Audit logs are immutable.
+     * @principle Read-only for admins, write-only for system.
+     */
+    match /auditLogs/{logId} {
+      allow get, list: if isAdmin();
+      allow create: if false; // Only Cloud Functions should create audit logs
+      allow update, delete: if false; // Audit logs are immutable
     }
   }
 }

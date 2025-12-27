@@ -291,6 +291,182 @@
         }
       },
       "required": ["patientId", "name", "relationship"]
+    },
+    "Admin": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Admin",
+      "type": "object",
+      "description": "Represents an administrator in the MediMe Healthcare Platform for MediMe_Admin integration.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Admin entity (matches auth UID)."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "The first name of the admin."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "The last name of the admin."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the admin.",
+          "format": "email"
+        },
+        "role": {
+          "type": "string",
+          "description": "The admin's role.",
+          "enum": ["superadmin", "admin", "moderator"]
+        },
+        "permissions": {
+          "type": "array",
+          "description": "List of permissions granted to the admin.",
+          "items": {
+            "type": "string",
+            "enum": [
+              "manage_users",
+              "manage_doctors",
+              "manage_patients",
+              "manage_appointments",
+              "view_analytics",
+              "manage_admins",
+              "system_settings"
+            ]
+          }
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the admin account is active."
+        },
+        "lastLogin": {
+          "type": "string",
+          "description": "Timestamp of the last login.",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of account creation.",
+          "format": "date-time"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last update.",
+          "format": "date-time"
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "ID of the admin who created this account."
+        }
+      },
+      "required": ["id", "firstName", "lastName", "email", "role", "permissions", "active"]
+    },
+    "SystemSettings": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "SystemSettings",
+      "type": "object",
+      "description": "Global system settings for the MediMe Healthcare Platform.",
+      "properties": {
+        "maintenanceMode": {
+          "type": "boolean",
+          "description": "Whether the system is in maintenance mode."
+        },
+        "allowNewRegistrations": {
+          "type": "boolean",
+          "description": "Whether new user registrations are allowed."
+        },
+        "adminEmailDomain": {
+          "type": "string",
+          "description": "Allowed email domain for admin accounts."
+        },
+        "maxAppointmentsPerDay": {
+          "type": "number",
+          "description": "Maximum number of appointments allowed per day system-wide."
+        },
+        "notificationSettings": {
+          "type": "object",
+          "description": "Notification configuration settings.",
+          "properties": {
+            "emailEnabled": {
+              "type": "boolean"
+            },
+            "smsEnabled": {
+              "type": "boolean"
+            },
+            "pushEnabled": {
+              "type": "boolean"
+            },
+            "appointmentReminders": {
+              "type": "boolean"
+            },
+            "medicationReminders": {
+              "type": "boolean"
+            }
+          }
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last update.",
+          "format": "date-time"
+        },
+        "updatedBy": {
+          "type": "string",
+          "description": "Admin ID who made the last update."
+        },
+        "version": {
+          "type": "string",
+          "description": "Version of the system settings schema."
+        }
+      },
+      "required": ["maintenanceMode", "allowNewRegistrations", "updatedAt", "updatedBy"]
+    },
+    "AuditLog": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "AuditLog",
+      "type": "object",
+      "description": "Audit log entry for tracking admin actions.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the audit log entry."
+        },
+        "adminId": {
+          "type": "string",
+          "description": "ID of the admin who performed the action."
+        },
+        "adminEmail": {
+          "type": "string",
+          "description": "Email of the admin who performed the action.",
+          "format": "email"
+        },
+        "action": {
+          "type": "string",
+          "description": "The action performed (e.g., 'create_patient', 'update_appointment')."
+        },
+        "resourceType": {
+          "type": "string",
+          "description": "Type of resource affected (e.g., 'patient', 'doctor', 'appointment')."
+        },
+        "resourceId": {
+          "type": "string",
+          "description": "ID of the affected resource."
+        },
+        "details": {
+          "type": "object",
+          "description": "Additional details about the action."
+        },
+        "ipAddress": {
+          "type": "string",
+          "description": "IP address from which the action was performed."
+        },
+        "timestamp": {
+          "type": "string",
+          "description": "Timestamp of the action.",
+          "format": "date-time"
+        }
+      },
+      "required": ["id", "adminId", "adminEmail", "action", "resourceType", "timestamp"]
     }
   },
   "auth": {
@@ -412,8 +588,51 @@
             }
           ]
         }
+      },
+      {
+        "path": "/admins/{adminId}",
+        "definition": {
+          "entityName": "Admin",
+          "schema": {
+            "$ref": "#/backend/entities/Admin"
+          },
+          "description": "Stores admin user information for MediMe_Admin dashboard integration. Access restricted to authenticated admins with proper permissions.",
+          "params": [
+            {
+              "name": "adminId",
+              "description": "The unique identifier for the admin user."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/systemSettings/config",
+        "definition": {
+          "entityName": "SystemSettings",
+          "schema": {
+            "$ref": "#/backend/entities/SystemSettings"
+          },
+          "description": "Stores global system configuration. Only accessible by superadmins.",
+          "params": []
+        }
+      },
+      {
+        "path": "/auditLogs/{logId}",
+        "definition": {
+          "entityName": "AuditLog",
+          "schema": {
+            "$ref": "#/backend/entities/AuditLog"
+          },
+          "description": "Stores audit trail of admin actions for compliance and security monitoring. Read-only for admins, write-only via Cloud Functions.",
+          "params": [
+            {
+              "name": "logId",
+              "description": "The unique identifier for the audit log entry."
+            }
+          ]
+        }
       }
     ],
-    "reasoning": "The Firestore data structure is designed to ensure security, scalability, and debuggability, following the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The design prioritizes path-based ownership for user-specific data and uses membership maps for collaborative data access, ensuring clear authorization and efficient data retrieval. The structure is segregated based on security needs and data types. All documents in a collection share the same security requirements to avoid complex rules. All data related to patients and doctors are stored under their respective user IDs to maintain data ownership and privacy. Authorization Independence is achieved through path-based ownership, avoiding the need for `get()` calls in security rules. This ensures atomic operations and easier debugging. The segregation of data based on security requirements (e.g., private data under `/users/{userId}`) supports secure `list` operations (QAPs). The use of explicit state modeling with dedicated status fields enhances data clarity and predictability."
+    "reasoning": "The Firestore data structure is designed to ensure security, scalability, and debuggability, following the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The design prioritizes path-based ownership for user-specific data and uses membership maps for collaborative data access, ensuring clear authorization and efficient data retrieval. The structure is segregated based on security needs and data types. All documents in a collection share the same security requirements to avoid complex rules. All data related to patients and doctors are stored under their respective user IDs to maintain data ownership and privacy. Authorization Independence is achieved through path-based ownership, avoiding the need for `get()` calls in security rules. This ensures atomic operations and easier debugging. The segregation of data based on security requirements (e.g., private data under `/users/{userId}`) supports secure `list` operations (QAPs). The use of explicit state modeling with dedicated status fields enhances data clarity and predictability. For MediMe_Admin integration, admin-specific collections are added with role-based access control (RBAC) using Firebase custom claims. System settings and audit logs provide centralized configuration and compliance tracking."
   }
 }
