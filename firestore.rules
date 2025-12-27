@@ -173,8 +173,8 @@ service cloud.firestore {
        * @allow (all) Only the patient can CRUD their own medical reports.
        * @deny (all) Another user cannot access a patient's medical reports.
        * @principle Enforces strict data ownership. Access for other roles (e.g., doctors)
-       *            is not possible without a denormalized ID field (e.g., 'orderingDoctorId')
-       *            on this document.
+       *            is not possible without a denormalized ID field (eg 'orderingDoctorId')
+       *            on this document
        */
       match /medicalReports/{medicalReportId} {
         allow get, list, create, update, delete: if isOwner(patientId);
@@ -197,18 +197,17 @@ service cloud.firestore {
      * @path /doctors/{doctorId}
      * @allow (create) A new user can create their own doctor profile.
      * @deny (create) A user cannot create a profile for another user.
-     * @allow (read, update, delete) An authenticated user can manage their own profile.
+     * @allow (read) Any authenticated user can view a doctor's profile.
+     * @allow (list) Any authenticated user can list all doctors.
+     * @allow (update, delete) An authenticated user can manage their own profile.
      * @deny (read, update, delete) A user cannot access another doctor's profile.
-     * @deny (list) Listing all doctors is forbidden to protect privacy.
-     * @principle Restricts access to a user's own data tree (Self-Creation & Ownership).
+     * @principle Publicly readable list, but write access restricted to owner.
      */
     match /doctors/{doctorId} {
-      allow get: if isOwner(doctorId);
-      allow list: if false;
+      allow get, list: if isSignedIn();
       allow create: if isCreatingOwnProfile(doctorId);
       allow update: if isOwner(doctorId) && isExistingDoc() && isIdImmutable();
       allow delete: if isOwner(doctorId) && isExistingDoc();
     }
   }
 }
-    
