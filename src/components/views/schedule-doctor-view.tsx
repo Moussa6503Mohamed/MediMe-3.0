@@ -2,24 +2,19 @@
 
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
-import { doctors, specialties } from "@/lib/data";
+import { specialties } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
   Stethoscope,
   MapPin,
-  Calendar,
   UserCheck,
 } from "lucide-react";
 import { Header } from "./header";
 import { useState } from "react";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection, query, where } from "firebase/firestore";
+import type { Doctor } from "@/lib/types";
 
 export default function ScheduleDoctorView() {
   const {
@@ -31,14 +26,19 @@ export default function ScheduleDoctorView() {
     selectedCity,
   } = useAppStore();
   const { t } = useI18n();
-
+  const firestore = useFirestore();
   const [search, setSearch] = useState("");
 
   const filteredSpecialties = specialties.filter(s => s.toLowerCase().includes(search.toLowerCase()));
 
-  const availableDoctors = doctors.filter(
-    (d) => d.specialization === selectedSpecialty
-  );
+  const doctorsQuery = useMemoFirebase(() => {
+    return query(
+      collection(firestore, 'doctors'),
+      where('specialization', '==', selectedSpecialty)
+    );
+  }, [firestore, selectedSpecialty]);
+
+  const { data: availableDoctors, isLoading } = useCollection<Doctor>(doctorsQuery);
 
   return (
     <div className="pb-safe-footer">
@@ -79,10 +79,11 @@ export default function ScheduleDoctorView() {
       </div>
 
       <h2 className="text-xl font-bold text-gray-800 mb-4">
-        {selectedSpecialty} Doctors ({availableDoctors.length})
+        {selectedSpecialty} Doctors ({availableDoctors?.length || 0})
       </h2>
+      {isLoading && <p>Loading doctors...</p>}
       <div className="space-y-4">
-        {availableDoctors.length > 0 ? (
+        {availableDoctors && availableDoctors.length > 0 ? (
           availableDoctors.map((doctor) => (
             <div
               key={doctor.id}
@@ -118,7 +119,7 @@ export default function ScheduleDoctorView() {
             </div>
           ))
         ) : (
-          <p className="text-muted-foreground italic p-4 bg-gray-50 rounded-xl">
+         !isLoading && <p className="text-muted-foreground italic p-4 bg-gray-50 rounded-xl">
             {t("noDoctorsFound", {
               specialty: selectedSpecialty,
               city: selectedCity,

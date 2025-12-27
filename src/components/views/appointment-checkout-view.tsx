@@ -2,7 +2,6 @@
 
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
-import { doctors } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -16,6 +15,9 @@ import {
 } from "lucide-react";
 import { Header } from "./header";
 import { useToast } from "@/hooks/use-toast";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { Doctor } from "@/lib/types";
 
 export default function AppointmentCheckoutView() {
   const {
@@ -29,8 +31,19 @@ export default function AppointmentCheckoutView() {
   } = useAppStore();
   const { t } = useI18n();
   const { toast } = useToast();
+  const firestore = useFirestore();
 
-  const doctor = doctors.find((d) => d.id === activeDoctorId);
+  const doctorDocRef = useMemoFirebase(() => {
+    if (!activeDoctorId) return null;
+    return doc(firestore, 'doctors', activeDoctorId);
+  }, [firestore, activeDoctorId]);
+
+  const { data: doctor, isLoading } = useDoc<Doctor>(doctorDocRef);
+
+
+  if (isLoading) {
+    return <div>Loading...</div>
+  }
 
   if (!doctor || !selectedAppointmentTime) {
     return <div>Error: Doctor or time slot not selected.</div>;
@@ -45,6 +58,7 @@ export default function AppointmentCheckoutView() {
   const totalDue = subtotal - insuranceDeduction;
 
   const handlePay = () => {
+    // In a real app, this would also create an appointment document in Firestore
     toast({
       title: t("appointmentBooked"),
       description: t("youAreAllSet"),

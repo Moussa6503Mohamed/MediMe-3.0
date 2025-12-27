@@ -13,21 +13,31 @@ export type Appointment = {
   };
   
   export type Medication = {
+    id: string;
+    patientId: string;
     name: string;
     dosage: string;
     frequency: string;
-    prescribingDoctor: string;
+    prescribingDoctor?: string;
     stockDoses: number;
     totalDoses: number;
-    color: string;
     price: number;
+    color?: string;
   };
   
   export type MedicalReport = {
     id: string;
+    patientId: string;
     title: string;
-    date: Date;
+    date: string; // ISO String
     type: string;
+    doctor: string;
+    diagnosis: string;
+    symptoms: string;
+    medications: string[];
+    attachments: { type: string; name: string }[];
+    color: string;
+    textColor: string;
   };
   
   export type FamilyMember = {
@@ -66,26 +76,6 @@ export type Appointment = {
     fee: number;
   };
   
-  export type ScheduleItem = {
-    id: string;
-    date: Date;
-    time: string;
-    type: "Medication" | "Appointment" | "Reminder" | "Test";
-    title: string;
-    detail: string;
-    isCompleted: boolean;
-    icon: string;
-    color: string;
-    textColor: string;
-    notes?: string;
-    location?: string;
-    doctor?: string;
-    appointmentType?: string;
-    facility?: string;
-    department?: string;
-    instructions?: string;
-  };
-  
   export type Notification = {
     id: number;
     typeKey: string;
@@ -102,23 +92,6 @@ export type Appointment = {
     memberId: string;
   };
 
-  export type DoctorReport = {
-    id: string;
-    date: string;
-    title: string;
-    doctor: string;
-    location: string;
-symptoms: string;
-    diagnosis: string;
-    medications: string[];
-    attachments: {
-      type: string;
-      name: string;
-    }[];
-    color: string;
-    textColor: string;
-  };
-  
   export type OrderDetails = {
     medications: string[];
     pharmacyName: string;

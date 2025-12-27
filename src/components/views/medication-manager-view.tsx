@@ -1,19 +1,31 @@
 "use client";
 
 import { useAppStore } from "@/store/app-store";
-import { medications } from "@/lib/data";
 import { useI18n } from "@/hooks/use-i18n";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { AlertTriangle, Pill, Plus, ShoppingCart, Square, Check } from "lucide-react";
+import { AlertTriangle, Pill, Plus, ShoppingCart } from "lucide-react";
 import { Header } from "./header";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { Medication } from "@/lib/types";
 
 export default function MedicationManagerView() {
   const { navigate, refillCart, setRefillCart } = useAppStore();
   const { t } = useI18n();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const firestore = useFirestore();
+
+  const medicationsQuery = useMemoFirebase(() => {
+    if (!currentUser) return null;
+    return collection(firestore, 'patients', currentUser.uid, 'medications');
+  }, [firestore, currentUser]);
+
+  const { data: medications, isLoading } = useCollection<Medication>(medicationsQuery);
 
   const toggleInCart = (medName: string) => {
     const newCart = refillCart.includes(medName)
@@ -26,10 +38,10 @@ export default function MedicationManagerView() {
     })
   };
 
-  const lowStockMeds = medications.filter((m) => m.stockDoses <= 7);
-  const normalStockMeds = medications.filter((m) => m.stockDoses > 7);
+  const lowStockMeds = medications?.filter((m) => m.stockDoses <= 7) || [];
+  const normalStockMeds = medications?.filter((m) => m.stockDoses > 7) || [];
 
-  const MedCard = ({ med, isLowStock }: { med: (typeof medications)[0], isLowStock: boolean }) => {
+  const MedCard = ({ med, isLowStock }: { med: Medication, isLowStock: boolean }) => {
     const isInCart = refillCart.includes(med.name);
     return (
       <div
@@ -43,11 +55,11 @@ export default function MedicationManagerView() {
           <div className="flex items-center space-x-2">
             <Pill className={cn("w-5 h-5", med.color)} />
             <p className={cn("text-lg font-bold", med.color)}>
-              {t(med.name.toLowerCase() as any)}
+              {med.name}
             </p>
           </div>
           <p className="text-sm text-muted-foreground">
-            {med.dosage} · {t(med.frequency.toLowerCase().replace(" ", "") as any)}
+            {med.dosage} · {med.frequency}
           </p>
           {isLowStock && (
              <p className="text-xs font-semibold text-red-600 flex items-center">
@@ -85,44 +97,50 @@ export default function MedicationManagerView() {
       >
         <Plus className="w-5 h-5 mr-2" /> {t("addMedication")}
       </Button>
+      
+      {isLoading && <p>Loading medications...</p>}
 
-      <div className="mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold text-gray-800 flex items-center">
-            <ShoppingCart className="w-6 h-6 mr-2 text-destructive" />{" "}
-            {t("refill")} ({lowStockMeds.length})
-          </h2>
-          <Button
-            onClick={() => refillCart.length > 0 ? navigate("refill-cart-view") : toast({title: t("refillCartEmpty")})}
-            disabled={refillCart.length === 0}
-            size="sm"
-          >
-            {t("refillCart")} ({refillCart.length})
-          </Button>
-        </div>
-        <div className="space-y-4">
-            {lowStockMeds.length > 0 ? lowStockMeds.map(med => <MedCard key={med.name} med={med} isLowStock={true} />) : <p className="text-muted-foreground italic p-4 bg-gray-50 rounded-xl">{t('emptyCart')}</p>}
-        </div>
-      </div>
-
-      <h2 className="text-xl font-bold text-gray-800 mb-4">
-        All Medications ({normalStockMeds.length})
-      </h2>
-      <div className="space-y-4">
-      {normalStockMeds.map(med => (
-          <div key={med.name} className="p-4 rounded-xl shadow-sm border border-gray-100 bg-white flex items-center justify-between hover:bg-gray-50">
-            <div className="flex-1 space-y-1">
-                <div className="flex items-center space-x-2">
-                    <Pill className={cn("w-5 h-5", med.color)} />
-                    <p className="text-lg font-bold text-gray-800">{t(med.name.toLowerCase() as any)} ({med.dosage})</p>
-                </div>
-                <p className="text-sm text-gray-500">{t(med.frequency.toLowerCase().replace(' ', '') as any)}</p>
-                <Progress value={(med.stockDoses / med.totalDoses) * 100} className="mt-2 h-2" />
-                <p className="text-xs text-gray-400">{med.stockDoses} / {med.totalDoses} doses left</p>
+      {!isLoading && (
+        <>
+          <div className="mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold text-gray-800 flex items-center">
+                <ShoppingCart className="w-6 h-6 mr-2 text-destructive" />{" "}
+                {t("refill")} ({lowStockMeds.length})
+              </h2>
+              <Button
+                onClick={() => refillCart.length > 0 ? navigate("refill-cart-view") : toast({title: t("refillCartEmpty")})}
+                disabled={refillCart.length === 0}
+                size="sm"
+              >
+                {t("refillCart")} ({refillCart.length})
+              </Button>
             </div>
-        </div>
-      ))}
-      </div>
+            <div className="space-y-4">
+                {lowStockMeds.length > 0 ? lowStockMeds.map(med => <MedCard key={med.name} med={med} isLowStock={true} />) : <p className="text-muted-foreground italic p-4 bg-gray-50 rounded-xl">{t('emptyCart')}</p>}
+            </div>
+          </div>
+
+          <h2 className="text-xl font-bold text-gray-800 mb-4">
+            All Medications ({normalStockMeds.length})
+          </h2>
+          <div className="space-y-4">
+          {normalStockMeds.map(med => (
+              <div key={med.name} className="p-4 rounded-xl shadow-sm border border-gray-100 bg-white flex items-center justify-between hover:bg-gray-50">
+                <div className="flex-1 space-y-1">
+                    <div className="flex items-center space-x-2">
+                        <Pill className={cn("w-5 h-5", med.color)} />
+                        <p className="text-lg font-bold text-gray-800">{med.name} ({med.dosage})</p>
+                    </div>
+                    <p className="text-sm text-gray-500">{med.frequency}</p>
+                    <Progress value={(med.stockDoses / med.totalDoses) * 100} className="mt-2 h-2" />
+                    <p className="text-xs text-gray-400">{med.stockDoses} / {med.totalDoses} doses left</p>
+                </div>
+            </div>
+          ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -1,17 +1,29 @@
 "use client";
 
 import { useAppStore } from "@/store/app-store";
-import { medications } from "@/lib/data";
 import { useI18n } from "@/hooks/use-i18n";
 import { Button } from "@/components/ui/button";
 import { Pill, ShoppingCart, Truck, Trash2 } from "lucide-react";
 import { Header } from "./header";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { Medication } from "@/lib/types";
 
 export default function RefillCartView() {
   const { navigate, refillCart, setRefillCart } = useAppStore();
   const { t } = useI18n();
+  const { currentUser } = useAuth();
+  const firestore = useFirestore();
 
-  const medsInCart = medications.filter((m) => refillCart.includes(m.name));
+  const medicationsQuery = useMemoFirebase(() => {
+    if (!currentUser) return null;
+    return collection(firestore, 'patients', currentUser.uid, 'medications');
+  }, [firestore, currentUser]);
+
+  const { data: medications, isLoading } = useCollection<Medication>(medicationsQuery);
+
+  const medsInCart = medications?.filter((m) => refillCart.includes(m.name)) || [];
   const subtotal = medsInCart.reduce((acc, med) => acc + med.price, 0);
 
   const handleRemove = (medName: string) => {
@@ -25,8 +37,9 @@ export default function RefillCartView() {
         icon={<ShoppingCart />}
         backPage="medication-manager-view"
       />
+       {isLoading && <p>Loading cart...</p>}
       <div className="space-y-4 mb-8">
-        {medsInCart.length > 0 ? (
+        {!isLoading && medsInCart.length > 0 ? (
           medsInCart.map((med) => (
             <div
               key={med.name}
@@ -36,9 +49,9 @@ export default function RefillCartView() {
                 <Pill className="w-5 h-5 text-primary" />
                 <div>
                   <p className="text-lg font-semibold text-gray-800">
-                    {t(med.name.toLowerCase() as any)} ({med.dosage})
+                    {med.name} ({med.dosage})
                   </p>
-                  <p className="text-sm text-gray-500">{t(med.frequency.toLowerCase().replace(" ", "") as any)}</p>
+                  <p className="text-sm text-gray-500">{med.frequency}</p>
                 </div>
               </div>
               <div className="text-right flex items-center space-x-4">
@@ -56,11 +69,11 @@ export default function RefillCartView() {
             </div>
           ))
         ) : (
-          <p className="text-muted-foreground italic">{t("emptyCart")}</p>
+          !isLoading && <p className="text-muted-foreground italic">{t("emptyCart")}</p>
         )}
       </div>
 
-      {medsInCart.length > 0 && (
+      {!isLoading && medsInCart.length > 0 && (
         <>
           <div className="p-6 bg-gray-50 rounded-2xl shadow-inner mb-8">
             <div className="flex justify-between text-xl font-bold text-gray-800">

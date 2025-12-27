@@ -2,7 +2,6 @@
 
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
-import { doctorReports } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import {
   FileText,
@@ -18,6 +17,10 @@ import {
 import { Header } from "./header";
 import { DetailField } from "./detail-field";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { MedicalReport } from "@/lib/types";
 
 const FeverIcon = () => (
     <svg
@@ -40,8 +43,20 @@ export default function ReportDetailView() {
   const { activeReportId } = useAppStore();
   const { t } = useI18n();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const firestore = useFirestore();
 
-  const report = doctorReports.find((r) => r.id === activeReportId);
+  const reportDocRef = useMemoFirebase(() => {
+    if (!currentUser || !activeReportId) return null;
+    return doc(firestore, 'patients', currentUser.uid, 'medicalReports', activeReportId);
+  }, [firestore, currentUser, activeReportId]);
+
+  const { data: report, isLoading } = useDoc<MedicalReport>(reportDocRef);
+
+
+  if (isLoading) {
+    return <div>Loading report...</div>;
+  }
 
   if (!report) {
     return <div>{t("reportNotFound")}</div>;

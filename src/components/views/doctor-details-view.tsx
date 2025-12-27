@@ -2,7 +2,6 @@
 
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
-import { doctors } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import {
   UserCheck,
@@ -14,6 +13,10 @@ import {
 } from "lucide-react";
 import { Header } from "./header";
 import { DetailField } from "./detail-field";
+import { useFirestore, useDoc, useMemoFirebase } from "@/firebase";
+import { doc } from "firebase/firestore";
+import type { Doctor } from "@/lib/types";
+
 
 export default function DoctorDetailsView() {
   const {
@@ -25,8 +28,18 @@ export default function DoctorDetailsView() {
     setSelectedAppointmentTime,
   } = useAppStore();
   const { t } = useI18n();
+  const firestore = useFirestore();
 
-  const doctor = doctors.find((d) => d.id === activeDoctorId);
+  const doctorDocRef = useMemoFirebase(() => {
+    if (!activeDoctorId) return null;
+    return doc(firestore, 'doctors', activeDoctorId);
+  }, [firestore, activeDoctorId]);
+
+  const { data: doctor, isLoading } = useDoc<Doctor>(doctorDocRef);
+
+  if (isLoading) {
+    return <div>Loading doctor details...</div>;
+  }
 
   if (!doctor) {
     return <div>{t("doctorNotFound")}</div>;

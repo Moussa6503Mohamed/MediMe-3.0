@@ -2,21 +2,34 @@
 
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
-import { doctorReports } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import { FileText, Plus, Upload } from "lucide-react";
 import { Header } from "./header";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { MedicalReport } from "@/lib/types";
 
 export default function ReportsListView() {
   const { navigate } = useAppStore();
   const { t } = useI18n();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const firestore = useFirestore();
+
+  const reportsQuery = useMemoFirebase(() => {
+    if (!currentUser) return null;
+    return collection(firestore, 'patients', currentUser.uid, 'medicalReports');
+  }, [firestore, currentUser]);
+
+  const { data: medicalReports, isLoading } = useCollection<MedicalReport>(reportsQuery);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      // In a real app, you'd upload this to Firebase Storage and then create a Firestore doc
       toast({
         title: "File Uploaded",
         description: `${file.name} has been uploaded successfully.`,
@@ -46,10 +59,11 @@ export default function ReportsListView() {
       />
 
       <h2 className="text-xl font-bold text-gray-800 mb-4">
-        {t("pastConsultations")} ({doctorReports.length})
+        {t("pastConsultations")} ({medicalReports?.length || 0})
       </h2>
+      {isLoading && <p>Loading reports...</p>}
       <div className="space-y-4">
-        {doctorReports.map((report) => (
+        {medicalReports && medicalReports.map((report) => (
           <div
             key={report.id}
             className={cn(
@@ -85,6 +99,9 @@ export default function ReportsListView() {
             </div>
           </div>
         ))}
+         {!isLoading && (!medicalReports || medicalReports.length === 0) && (
+            <p className="text-muted-foreground italic p-4 bg-gray-50 rounded-xl">No reports found.</p>
+        )}
       </div>
     </div>
   );

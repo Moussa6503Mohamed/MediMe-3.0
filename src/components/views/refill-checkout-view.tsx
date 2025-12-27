@@ -2,7 +2,7 @@
 
 import { useAppStore } from "@/store/app-store";
 import { useI18n } from "@/hooks/use-i18n";
-import { pharmacies, medications } from "@/lib/data";
+import { pharmacies } from "@/lib/data";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircle,
@@ -16,20 +16,34 @@ import {
 import { Header } from "./header";
 import { DetailField } from "./detail-field";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
+import { useFirestore, useCollection, useMemoFirebase } from "@/firebase";
+import { collection } from "firebase/firestore";
+import type { Medication } from "@/lib/types";
 
 export default function RefillCheckoutView() {
   const { navigate, selectedPharmacyId, refillCart, setLastOrder, setRefillCart, setSelectedPharmacyId } = useAppStore();
   const { t } = useI18n();
   const { toast } = useToast();
+  const { currentUser } = useAuth();
+  const firestore = useFirestore();
+
+  const medicationsQuery = useMemoFirebase(() => {
+    if (!currentUser) return null;
+    return collection(firestore, 'patients', currentUser.uid, 'medications');
+  }, [firestore, currentUser]);
+
+  const { data: medications, isLoading } = useCollection<Medication>(medicationsQuery);
 
   const pharmacy = pharmacies.find((p) => p.id === selectedPharmacyId);
 
   if (!pharmacy) {
     return <div>{t("noPharmacySelected")}</div>;
   }
+  
+  const medsInCart = medications?.filter((m) => refillCart.includes(m.name)) || [];
 
-  const subtotal = refillCart.reduce((total, medName) => {
-    const med = medications.find((m) => m.name === medName);
+  const subtotal = medsInCart.reduce((total, med) => {
     return total + (med ? med.price : 0);
   }, 0);
 
