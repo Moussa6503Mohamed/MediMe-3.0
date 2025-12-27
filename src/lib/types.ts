@@ -31,9 +31,8 @@ export type Appointment = {
     id: string;
     name: string;
     relationship: string;
-    dob: string;
-    bloodType: string;
-    primaryDoctor: string;
+    patientId: string;
+    email?: string;
   };
   
   export type Doctor = {
@@ -136,4 +135,4 @@ export type Appointment = {
   };
 
   export type CurrentUser = User;
-  
+    

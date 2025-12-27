@@ -31,7 +31,7 @@
  *   application development, except for fields critical to security (e.g., ownership IDs).
  *
  * @section Denormalization for Authorization
- * To ensure performant and secure access control, authorization data is denormalized. For
+ * To ensure performant and secure access control, authorization-related data is denormalized. For
  * example, the `Appointment` document contains a `doctorId` field. This allows the rules
  * to grant the specified doctor access without needing slow and costly `get()` or `exists()`
  * calls to other collections.
@@ -164,11 +164,7 @@ service cloud.firestore {
        *            on this document.
        */
       match /medications/{medicationId} {
-        allow get: if isOwner(patientId);
-        allow list: if isOwner(patientId);
-        allow create: if isOwner(patientId) && createdWithCorrectPatientId(patientId);
-        allow update: if isOwner(patientId) && isExistingDoc() && isPatientIdImmutable();
-        allow delete: if isOwner(patientId) && isExistingDoc();
+        allow get, list, create, update, delete: if isOwner(patientId);
       }
 
       /**
@@ -181,11 +177,18 @@ service cloud.firestore {
        *            on this document.
        */
       match /medicalReports/{medicalReportId} {
-        allow get: if isOwner(patientId);
-        allow list: if isOwner(patientId);
-        allow create: if isOwner(patientId) && createdWithCorrectPatientId(patientId);
-        allow update: if isOwner(patientId) && isExistingDoc() && isPatientIdImmutable();
-        allow delete: if isOwner(patientId) && isExistingDoc();
+        allow get, list, create, update, delete: if isOwner(patientId);
+      }
+      
+      /**
+       * @description Family Members: Stores references to other patients in the family circle.
+       * @path /patients/{patientId}/familyMembers/{familyMemberId}
+       * @allow (all) Only the patient can manage their own family member list.
+       * @deny (all) Another user cannot access or modify another patient's family list.
+       * @principle Enforces strict data ownership for managing relationships.
+       */
+      match /familyMembers/{familyMemberId} {
+          allow get, list, create, update, delete: if isOwner(patientId);
       }
     }
 
@@ -208,3 +211,4 @@ service cloud.firestore {
     }
   }
 }
+    

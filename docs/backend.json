@@ -246,6 +246,32 @@
         "reportDate",
         "reportContent"
       ]
+    },
+    "FamilyMember": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "FamilyMember",
+      "type": "object",
+      "description": "Represents a family member linked to a patient's account.",
+      "properties": {
+        "patientId": {
+          "type": "string",
+          "description": "The ID of the patient document this family member represents."
+        },
+        "name": {
+          "type": "string",
+          "description": "The full name of the family member."
+        },
+        "relationship": {
+          "type": "string",
+          "description": "The relationship to the primary account holder (e.g., Spouse, Child)."
+        },
+        "email": {
+          "type": "string",
+          "description": "The email address of the family member, used for invitations.",
+          "format": "email"
+        }
+      },
+      "required": ["patientId", "name", "relationship"]
     }
   },
   "auth": {
@@ -347,8 +373,29 @@
             }
           ]
         }
+      },
+      {
+        "path": "/patients/{patientId}/familyMembers/{familyMemberId}",
+        "definition": {
+          "entityName": "FamilyMember",
+          "schema": {
+            "$ref": "#/backend/entities/FamilyMember"
+          },
+          "description": "Stores references to other patient documents that are part of the family circle. Path-based ownership ensures only the primary user can manage their list of family members.",
+          "params": [
+            {
+              "name": "patientId",
+              "description": "The unique identifier for the primary patient."
+            },
+            {
+              "name": "familyMemberId",
+              "description": "The unique identifier for the family member entry."
+            }
+          ]
+        }
       }
     ],
     "reasoning": "The Firestore data structure is designed to ensure security, scalability, and debuggability, following the principles of Authorization Independence, Clarity of Intent, DBAC, and QAPs. The design prioritizes path-based ownership for user-specific data and uses membership maps for collaborative data access, ensuring clear authorization and efficient data retrieval. The structure is segregated based on security needs and data types. All documents in a collection share the same security requirements to avoid complex rules. All data related to patients and doctors are stored under their respective user IDs to maintain data ownership and privacy. Authorization Independence is achieved through path-based ownership, avoiding the need for `get()` calls in security rules. This ensures atomic operations and easier debugging. The segregation of data based on security requirements (e.g., private data under `/users/{userId}`) supports secure `list` operations (QAPs). The use of explicit state modeling with dedicated status fields enhances data clarity and predictability."
   }
 }
+    
